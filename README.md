@@ -30,6 +30,53 @@ A complete installer for Adobe Photoshop CC 2021 on Linux using Wine 9.0. This i
 
 ## Installation
 
+### Running Directly (Without Cloning)
+
+You can run any of the scripts directly from the repository without cloning. This is useful for quick installations:
+
+**Note:** When running directly, make sure the `AdobePhotoshop2021.tar.xz` file is in the current directory, or the script will download it automatically.
+
+#### Installation Scripts
+
+```bash
+# Install with Camera Raw (Recommended)
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021installcr.sh | bash -s -- /path/to/install/directory
+
+# Install without Camera Raw
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021install.sh | bash -s -- /path/to/install/directory
+
+# Verbose installation with Camera Raw
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021installcr.sh | bash -s -- -v /path/to/install/directory
+
+# Verbose installation without Camera Raw
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021install.sh | bash -s -- -v /path/to/install/directory
+```
+
+#### Uninstaller Script
+
+```bash
+# Uninstall Photoshop
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/uninstaller.sh | bash -s -- /path/to/install/directory
+
+# Verbose uninstallation
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/uninstaller.sh | bash -s -- -v /path/to/install/directory
+```
+
+#### Examples with Real Paths
+
+```bash
+# Install to ~/Photoshop directory with Camera Raw
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021installcr.sh | bash -s -- ~/Photoshop
+
+# Install to /opt/Photoshop without Camera Raw (verbose)
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021install.sh | bash -s -- -v /opt/Photoshop
+
+# Uninstall from ~/Photoshop
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/uninstaller.sh | bash -s -- ~/Photoshop
+```
+
+**Important:** All scripts support this direct execution method - installers, uninstaller, and any future scripts can be run using `curl | bash` pattern.
+
 ### Standard Installation (with Camera Raw)
 
 ```bash
