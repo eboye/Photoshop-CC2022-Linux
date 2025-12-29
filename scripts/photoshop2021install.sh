@@ -71,13 +71,6 @@ log_error() {
   echo -e "${RED}✗ ERROR:${NC} $1"
 }
 
-# Redirect output based on verbose mode
-if [ "$VERBOSE" = true ]; then
-  REDIRECT=""
-else
-  REDIRECT=">/dev/null 2>&1"
-fi
-
 # Get absolute paths first
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
@@ -91,17 +84,17 @@ if [ ! -d "$WINE_DIR" ]; then
   log_info "Downloading Wine 9.0 from Kron4ek... (this may take a few minutes)"
   mkdir -p "$INSTALL_DIR/wine-tmp"
   cd "$INSTALL_DIR/wine-tmp"
-  
+
   if [ "$VERBOSE" = true ]; then
     wget https://github.com/Kron4ek/Wine-Builds/releases/download/9.0/wine-9.0-amd64.tar.xz
   else
     wget -q --show-progress https://github.com/Kron4ek/Wine-Builds/releases/download/9.0/wine-9.0-amd64.tar.xz
   fi
-  
+
   log_info "Extracting Wine..."
   tar -xf wine-9.0-amd64.tar.xz
   mv wine-9.0-amd64 "$WINE_DIR"
-  
+
   cd "$INSTALL_DIR"
   rm -rf wine-tmp
   log_success "Wine 9.0 installed"
