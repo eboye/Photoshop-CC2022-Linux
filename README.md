@@ -1,118 +1,168 @@
-# Photoshop-CC2022-Linux
+# Photoshop CC 2021 for Linux
 
-### Updated fork. **MUST DOWNLOAD** manually the file AdobePhotoshop2021.tar.xz
-
-### Make sure you place AdobePhotoshop2021.tar.xz in the same directory as this script
-
-#### **Refer to this [GitHub comment](https://github.com/LinSoftWin/Photoshop-CC2022-Linux/pull/128#issuecomment-2043562369) for a blazing-fast alternative download source**
-
--  **SHA256 SUM for checking file authenticity:** 8321b969161f2d2ad736067320d493c5b6ae579eaab9400cd1fda6871af2c033
-
-
-## Important
-
-#### PLEASE WHEN OPENING AN ISSUE FILL THE TEMPLATE OR GIVE ENOUGHT INFORMATION !!! "It doesn't work" ISN'T ENOUGH **
-
-**Please note that the GUI version might not work on your distribution. it worked with some older packager and has broken since. if you used the GUI and it hasn't worked, please try to use the CLI installer with a sh file in the RELEASE section. (avoid cloning as master branche can have experimental changes)**
+A complete installer for Adobe Photoshop CC 2021 on Linux using Wine 9.0. This installer includes Camera Raw support and provides an isolated Wine environment for maximum compatibility.
 
 **DISCLAIMER:**
-**Please use this software only if you have an active Photoshop subscription. I'm not responsable of any use without subscription.**
+**Please use this software only if you have an active Photoshop subscription. I'm not responsible for any use without subscription.**
 
-This git repo contains an installer for photoshop CC 2022 on linux with wine.
+## Features
 
-Note that Photoshop CC 2022 isn't as stable as the CC2021 version on linux. If you need a production environement, concidere using PS2021 instead
-
-If you use something from my repo in your project please credit me
-
-| Version  | Rating |
-| ------------- | ------------- |
-| [CC 2021](https://github.com/MiMillieuh/Photoshop-CC2022-Linux/releases/tag/2.1.3)  | Works almost like on Windows  |
-| [CC 2022](https://github.com/MiMillieuh/Photoshop-CC2022-Linux/releases/tag/2.1.1)  | Not ready for production... Basic functions works, No GPU acceleration  |
-
-![Screenshot from 2022-05-17 00-02-27](https://user-images.githubusercontent.com/52078885/168690419-274020b0-c993-4b86-a58f-f0f07237aa4f.png)
-
-*File download is about 2GB*
+- **Photoshop CC 2021** with full compatibility
+- **Camera Raw 12.2.1** included and pre-installed
+- **Wine 9.0** isolated installation (doesn't affect system Wine)
+- **DXVK and VKD3D** for better graphics performance
+- **Desktop integration** with application launcher and icon
+- **Colored progress output** with detailed installation steps
 
 ## Requirements
 
-**Tested CC2021 on openSUSE Tumbleweed** using Wine-9.6, no problems so far
-- wine >=6.1 (Avoid 6.20 to 6.22 **DON'T USE STAGING**) 
+- **Linux distribution** (tested on openSUSE Tumbleweed, Ubuntu, Fedora)
+- **Basic utilities:**
+  - tar
+  - wget
+  - curl
+  - zenity (for notifications)
+- **Vulkan-capable GPU or APU** (older GPUs may encounter issues)
+- **Write permissions** to the installation directory
+- **Active internet connection** (downloads ~2GB of data)
 
-(Wine 8.0+ are causing an issue with the windows version see workaround [here](https://github.com/MiMillieuh/Photoshop-CC2022-Linux/issues/94#issuecomment-1426776219))
-- zenity
-- appmenu-gtk-module
-- tar
-- wget
-- curl
-- All R/W rights on your home folder and the installer folder
-- Vulkan capable GPU or APU (Older GPUs might encounter [This issue #100](https://github.com/MiMillieuh/Photoshop-CC2022-Linux/issues/100))
+## Installation
 
+### Standard Installation (with Camera Raw)
 
-## Usage: 
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/LinuxPS.git
+cd LinuxPS
 
-**CLI:**
+# Run the installer
+./scripts/photoshop2021installcr.sh /path/to/install/directory
+```
 
-`sh photoshop2022install.sh /path/to/your/install/folder`
+### Verbose Installation
 
-**Camera Raw**
-You can install Camera Raw this way:
+For detailed output during installation:
 
-`curl -L "https://download.adobe.com/pub/adobe/photoshop/cameraraw/win/12.x/CameraRaw_12_2_1.exe" > CameraRaw_12_2_1.exe`
-`WINEPREFIX=/Path/To/Your/Photoshop/Install/Adobe-Photoshop wine CameraRaw_12_2_1.exe`
+```bash
+./scripts/photoshop2021installcr.sh -v /path/to/install/directory
+```
 
-To use camera raw you need to change a settings
-Edit -> preferences -> Camera raw... -> performance -> Use graphic processor: Off
+### Without Camera Raw
 
-If camera raw is sometimes grayed out, just go to: Edit -> preferences -> Tools, and uncheck show Tooltips.
+If you prefer to install without Camera Raw:
 
+```bash
+./scripts/photoshop2021install.sh /path/to/install/directory
+```
 
+## Usage
 
-**GUI:**
+After installation, you can launch Photoshop in two ways:
 
-**THIS METHODE IS DEPRECATED PLEASE USE CLI**
+1. **From applications menu:** Graphics → Photoshop CC 2021
+2. **From terminal:**
+   ```bash
+   /path/to/install/directory/Adobe-Photoshop/drive_c/launcher.sh
+   ```
 
-Open photoshop installer:
+### Camera Raw Configuration
 
-![Screenshot from 2022-05-17 00-14-15](https://user-images.githubusercontent.com/52078885/168692144-a1819955-c541-4248-bca2-ef4ed248e4bf.png)
+If you encounter issues with Camera Raw:
 
-Click on install and chose the install folder (You must have acces to it):
+1. Open Photoshop
+2. Go to **Edit → Preferences → Camera Raw... → Performance**
+3. Set **"Use graphics processor"** to **Off**
+4. If Camera Raw is grayed out, go to **Edit → Preferences → Tools** and uncheck **"Show Tooltips"**
 
-![Screenshot from 2022-05-17 00-14-56](https://user-images.githubusercontent.com/52078885/168692184-62e2c937-fa4b-43e8-ab8a-449015b42994.png)
+## Uninstallation
 
-Wait for the install (It can take a long time depending on your internet and computer speed):
+To completely remove Photoshop:
 
-![Screenshot from 2022-05-17 00-17-28](https://user-images.githubusercontent.com/52078885/168692197-c861e67a-01e0-436d-8169-6d23a0aa4edb.png)
+```bash
+./scripts/uninstaller.sh /path/to/install/directory
+```
 
-Once it's done you can close the window:
+The uninstaller will remove:
+- Photoshop installation
+- Wine 9.0 installation
+- Desktop entry and icon
+- Empty installation directory (if applicable)
 
-![Screenshot from 2022-05-17 00-20-39](https://user-images.githubusercontent.com/52078885/168692210-7093c10d-310d-45f4-98fb-0d8eb25609f5.png)
+## Script Parameters
 
-Then you can launch Photoshop:
+### Install Scripts
 
-![Screenshot from 2022-05-17 00-21-04](https://user-images.githubusercontent.com/52078885/168692218-dd1dd912-83a8-4746-aafa-da7f0a9673c3.png)
+```bash
+./scripts/photoshop2021install[cr].sh [OPTIONS] /path/to/install/directory
+```
 
-**Uninstalling:**
+**Options:**
+- `-v, --verbose` - Show detailed output during installation
 
-To uninstall remove the photoshop desktop file in *~/.local/share/applications/* then your installation folder
+**Arguments:**
+- `/path/to/install/directory` - Where Photoshop will be installed (absolute or relative path)
 
+### Uninstaller Script
 
-## Special thanks to
-- The WineHQ team: For making wine
-- Gictorbit: For initial inspiration
-- HansKristian-Work: For making VKD3D-Proton
-- Adobe: For making Photoshop (also please release an official version for linux...)
+```bash
+./scripts/uninstaller.sh [OPTIONS] /path/to/install/directory
+```
 
+**Options:**
+- `-v, --verbose` - Show detailed output during uninstallation
 
+**Arguments:**
+- `/path/to/install/directory` - The directory where Photoshop was installed
 
+## File Structure After Installation
+
+```
+/path/to/install/directory/
+├── Adobe-Photoshop/          # Wine prefix and Photoshop files
+│   ├── drive_c/
+│   │   ├── Program Files/Adobe/Adobe Photoshop 2021/
+│   │   └── launcher.sh       # Launch script
+│   └── ...                   # Wine configuration files
+└── wine-9.0/                 # Isolated Wine 9.0 installation
+    ├── bin/
+    ├── lib/
+    └── lib64/
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Wine is not working correctly"**
+   - Ensure you have proper permissions in the installation directory
+   - Try running with verbose mode to see detailed error messages
+
+2. **Photoshop won't launch**
+   - First launch may take longer as Wine configures components
+   - Check if all redistributables were installed successfully
+
+3. **Performance issues**
+   - Ensure your GPU drivers are up to date
+   - Consider disabling GPU acceleration in Photoshop preferences
+
+### Getting Help
+
+When reporting issues, please include:
+- Your Linux distribution
+- The exact command used
+- Verbose output if available
+- Any error messages
+
+## Special Thanks
+
+- **The WineHQ team** - For making Wine possible
+- **Kron4ek** - For providing Wine builds
+- **Adobe** - For making Photoshop (please release an official Linux version!)
 
 ## Donate
 
-This isn't necessary but it helps paying the hosting server
+This isn't necessary but helps with hosting and development costs:
 
-
-
-BTC: 1LDKrdTKGHtGRjDSL2ULxGGzX4onL5YUsp
-
-ETH: 0x57bf06a94ead7b18beb237e9aec9ae3ef06fe29a
-
-BUSD: 0x57bf06a94ead7b18beb237e9aec9ae3ef06fe29a
+- **BTC:** 1LDKrdTKGHtGRjDSL2ULxGGzX4onL5YUsp
+- **ETH:** 0x57bf06a94ead7b18beb237e9aec9ae3ef06fe29a
+- **BUSD:** 0x57bf06a94ead7b18beb237e9aec9ae3ef06fe29a
