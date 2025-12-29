@@ -14,6 +14,8 @@ A complete installer for Adobe Photoshop CC 2021 on Linux using Wine 9.0. This i
 - **Desktop integration** with application launcher and icon
 - **Colored progress output** with detailed installation steps
 
+![Photoshop CC 2021 running on Linux](images/screenshot.png)
+
 ## Requirements
 
 - **Linux distribution** (tested on openSUSE Tumbleweed, Ubuntu, Fedora)
