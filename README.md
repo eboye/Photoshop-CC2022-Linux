@@ -63,7 +63,23 @@ sudo pacman -S tar wget curl xdotool p7zip
 yay -S gdown
 ```
 
-## Installation
+## Quick Start
+
+### Using the TUI Manager (Recommended)
+
+The easiest way to manage Photoshop is using the TUI manager:
+
+```bash
+./scripts/photoshop-manager.sh
+```
+
+This provides a user-friendly menu to:
+- Select any script (install, uninstall, backup, restore)
+- Toggle options with checkboxes
+- Enter paths with tab autocompletion
+- Review commands before execution
+
+**Requirements:** `dialog` or `whiptail` (usually pre-installed)
 
 ### Running Directly (Without Cloning)
 
@@ -72,6 +88,9 @@ You can run any of the scripts directly from the repository without cloning:
 #### Installation Scripts
 
 ```bash
+# TUI Manager (Recommended)
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop-manager.sh | bash
+
 # Install with Camera Raw (Recommended)
 curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021installcr.sh | bash -s -- /path/to/install/directory
 
