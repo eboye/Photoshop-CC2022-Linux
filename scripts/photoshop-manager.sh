@@ -297,7 +297,7 @@ execute_script() {
   case $SELECTED_SCRIPT in
     install)
       title="Installing Photoshop..."
-      cmd="./scripts/photoshop2021install.sh"
+      cmd="./photoshop2021install.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ "$KEEP_CACHE" = true ] && cmd="$cmd -k"
       [ "$SKIP_VERIFY" = true ] && cmd="$cmd -s"
@@ -306,7 +306,7 @@ execute_script() {
       ;;
     installcr)
       title="Installing Photoshop with Camera Raw..."
-      cmd="./scripts/photoshop2021installcr.sh"
+      cmd="./photoshop2021installcr.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ "$KEEP_CACHE" = true ] && cmd="$cmd -k"
       [ "$SKIP_VERIFY" = true ] && cmd="$cmd -s"
@@ -315,28 +315,28 @@ execute_script() {
       ;;
     uninstall)
       title="Uninstalling Photoshop..."
-      cmd="./scripts/uninstaller.sh"
+      cmd="./uninstaller.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ "$PURGE" = true ] && cmd="$cmd --purge"
       cmd="$cmd \"$INSTALL_PATH\""
       ;;
     backup)
       title="Creating backup..."
-      cmd="./scripts/backup-photoshop.sh"
+      cmd="./backup-photoshop.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ -n "$BACKUP_OPTS" ] && cmd="$cmd $BACKUP_OPTS"
       cmd="$cmd \"$INSTALL_PATH\""
       ;;
     restore)
       title="Restoring from backup..."
-      cmd="./scripts/restore-photoshop.sh"
+      cmd="./restore-photoshop.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ "$KEEP_PERMISSIONS" = true ] && cmd="$cmd -k"
       cmd="$cmd \"$BACKUP_FILE\" \"$INSTALL_PATH\""
       ;;
     desktop)
       title="Creating desktop entry..."
-      cmd="./scripts/create-desktop-entry.sh"
+      cmd="./create-desktop-entry.sh"
       [ "$FORCE_DESKTOP" = true ] && cmd="$cmd --force"
       [ -n "$DESKTOP_NAME" ] && cmd="$cmd --name \"$DESKTOP_NAME\""
       cmd="$cmd \"$INSTALL_PATH\""

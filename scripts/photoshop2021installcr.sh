@@ -23,6 +23,8 @@ readonly WINE_URL="https://github.com/Kron4ek/Wine-Builds/releases/download/9.0/
 readonly WINE_SHA256="cf0c09d4346dc10bc92ab674936292cff47eeb71ca7604b8e6303b7bdb97e2f6"
 readonly WINETRICKS_URL="https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks"
 readonly WINETRICKS_SHA256=""
+readonly CAMERA_RAW_URL="https://download.adobe.com/pub/adobe/photoshop/cameraraw/win/12.x/CameraRaw_12_2_1.exe"
+readonly CAMERA_RAW_SHA256=""
 readonly REDIST_URL="https://drive.google.com/uc?export=download&id=1qcmyHzWerZ39OhW0y4VQ-hOy7639bJPO"
 readonly REDIST_SHA256="a7cd24cecc984c10e6cbbdf77ebb8211bbc774cbc7d7e6fd9776f1eb13dbc9d4"
 readonly CACHE_DIR="$HOME/.cache/photoshop2021cr-installer"
@@ -86,7 +88,7 @@ WINE_DIR="$INSTALL_DIR/wine-9.0"
 WINEPREFIX="$INSTALL_DIR/Adobe-Photoshop"
 
 # Progress tracking
-TOTAL_STEPS=13
+TOTAL_STEPS=14
 CURRENT_STEP=0
 
 # Cleanup on exit
@@ -210,6 +212,15 @@ else
   log_info "Using existing redistributables"
 fi
 
+log_step "Downloading Camera Raw..."
+if ! download_file "$CAMERA_RAW_URL" "CameraRaw_12_2_1.exe" "$CAMERA_RAW_SHA256" "Camera Raw" "$SKIP_VERIFY" "$CACHE_DIR"; then
+  log_error "Failed to download Camera Raw"
+  SKIP_CAMERA_RAW=true
+else
+  CR_EXE="$INSTALL_DIR/CameraRaw_12_2_1.exe"
+  log_success "Camera Raw downloaded"
+fi
+
 # Find Photoshop archive
 log_step "Locating Photoshop archive..."
 PS_ARCHIVE="$WORK_DIR/AdobePhotoshop2021.tar.xz"
@@ -279,46 +290,24 @@ else
   exit 1
 fi
 
-# Find Camera Raw archive
-log_step "Locating Camera Raw archive..."
-CR_ARCHIVE="$WORK_DIR/CameraRaw14_3.dmg"
+# Prepare Camera Raw installer
+log_step "Preparing Camera Raw installer..."
 
-if [ ! -f "$CR_ARCHIVE" ]; then
-  if [ -f "$SCRIPT_DIR/CameraRaw14_3.dmg" ]; then
-    CR_ARCHIVE="$SCRIPT_DIR/CameraRaw14_3.dmg"
-  elif [ -f "$INSTALL_DIR/CameraRaw14_3.dmg" ]; then
-    CR_ARCHIVE="$INSTALL_DIR/CameraRaw14_3.dmg"
-  else
-    log_warning "Camera Raw archive not found - skipping Camera Raw installation"
-    SKIP_CAMERA_RAW=true
-  fi
+if [ "$SKIP_CAMERA_RAW" != "true" ]; then
+  log_success "Camera Raw installer ready"
+else
+  log_warning "Camera Raw download failed - skipping Camera Raw installation"
 fi
 
 if [ "$SKIP_CAMERA_RAW" != "true" ]; then
-  log_success "Found: $(basename "$CR_ARCHIVE")"
-  
   log_step "Installing Camera Raw..."
-  log_info "Extracting Camera Raw..."
-  
-  # Extract DMG (requires 7z)
-  if command -v 7z >/dev/null 2>&1; then
-    mkdir -p "$INSTALL_DIR/cr_temp"
-    cd "$INSTALL_DIR/cr_temp"
-    7z x "$CR_ARCHIVE" >/dev/null 2>&1
-    
-    # Find and install the package
-    if [ -f "Adobe Camera Raw 14.3 Installer.pkg" ]; then
-      log_info "Installing Camera Raw package..."
-      "$WINE_DIR/bin/wine" msiexec /i "Adobe Camera Raw 14.3 Installer.pkg" /quiet /norestart >/dev/null 2>&1 || true
-    fi
-    
-    cd "$INSTALL_DIR"
-    rm -rf cr_temp
-    log_success "Camera Raw installed"
+  log_info "Installing Camera Raw..."
+  if [ "$VERBOSE" = true ]; then
+    wine "$CR_EXE" --mode=silent
   else
-    log_warning "7z not found - skipping Camera Raw installation"
-    log_info "Install p7zip-full to enable Camera Raw installation"
+    wine "$CR_EXE" --mode=silent >/dev/null 2>&1
   fi
+  log_success "Camera Raw installed"
 fi
 
 log_step "Creating launcher..."
@@ -339,6 +328,13 @@ EOF
 
 chmod +x "$LAUNCHER"
 log_success "Launcher created"
+
+log_step "Creating desktop entry..."
+if ./create-desktop-entry.sh "$INSTALL_DIR" >/dev/null 2>&1; then
+  log_success "Desktop entry created"
+else
+  log_warning "Failed to create desktop entry"
+fi
 
 # Auto-run Photoshop and apply appearance config
 if [ "$SKIP_APPEARANCE" != "true" ]; then
@@ -366,6 +362,10 @@ echo ""
 echo -e "${BLUE}Or from the command line:${NC}"
 echo "  cd \"$INSTALL_DIR\""
 echo "  ./launch-photoshop.sh"
+echo ""
+echo -e "${BLUE}Or from the desktop/applications menu:${NC}"
+echo "  Look for 'Photoshop 2021' in your applications menu"
+echo "  Or double-click the icon on your desktop"
 echo ""
 if [ "$SKIP_CAMERA_RAW" != "true" ]; then
   echo -e "${GREEN}✓${NC} Photoshop 2021 with Camera Raw installed"
