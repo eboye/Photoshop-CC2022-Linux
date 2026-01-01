@@ -186,24 +186,31 @@ cd LinuxPS
 ./scripts/backup-photoshop.sh --no-compress /path/to/photoshop
 ```
 
-### Restore Script
+### Desktop Entry Script
 
 ```bash
-./scripts/restore-photoshop.sh [OPTIONS] backup-file.tar.xz /path/to/restore
+./scripts/create-desktop-entry.sh [OPTIONS] /path/to/photoshop/installation
 ```
 
 **Options:**
-- `-v, --verbose` - Show detailed output during restore
-- `-k, --keep-permissions` - Keep original file permissions
+- `-n, --name NAME` - Custom name for desktop entry (default: Photoshop 2021)
+- `-i, --icon PATH` - Path to custom icon file
+- `-f, --force` - Overwrite existing desktop entry
 - `-h, --help` - Show help message
 
 **Examples:**
 ```bash
-# Restore from backup
-./scripts/restore-photoshop.sh photoshop-2021-backup-20240101-120000.tar.xz /new/path
+# Create desktop entry with default name
+./scripts/create-desktop-entry.sh /path/to/photoshop
 
-# Restore with verbose output
-./scripts/restore-photoshop.sh -v backup.tar.xz /opt/Photoshop
+# Create with custom name
+./scripts/create-desktop-entry.sh -n "Adobe Photoshop" /path/to/photoshop
+
+# Create with custom icon
+./scripts/create-desktop-entry.sh -i /path/to/icon.png /path/to/photoshop
+
+# Overwrite existing entry
+./scripts/create-desktop-entry.sh --force /path/to/photoshop
 ```
 
 ## Installation Process
@@ -366,6 +373,46 @@ The restore script automatically:
 - Photoshop may need to reconfigure some settings on first launch after restore
 - Ensure the target system meets all requirements
 - Backup files can be restored on any Linux distribution
+
+## Desktop Integration
+
+### Creating Desktop Entries
+
+To create a desktop entry for easy access to Photoshop:
+
+```bash
+./scripts/create-desktop-entry.sh /path/to/photoshop/installation
+```
+
+This creates:
+- Application menu entry in Graphics category
+- Desktop shortcut (if Desktop folder exists)
+- MIME type associations for image files
+- Proper icon integration
+
+**Desktop Entry Location:**
+- User applications: `~/.local/share/applications/adobe-photoshop-2021.desktop`
+- Desktop shortcut: `~/Desktop/adobe-photoshop-2021.desktop`
+
+**Features:**
+- Automatic icon creation (blue "Ps" icon)
+- Integration with system theme
+- File association support
+- StartupWMClass for proper window grouping
+
+**Customization Options:**
+- Custom name: `-n "My Photoshop"`
+- Custom icon: `-i /path/to/icon.png`
+- Force overwrite: `--force`
+
+### Using the TUI Manager
+
+The TUI manager includes desktop entry creation:
+1. Run `./scripts/photoshop-manager.sh`
+2. Select "Create Desktop Entry"
+3. Choose custom name and options
+4. Select installation directory
+5. Confirm and create
 
 ## File Structure After Installation
 

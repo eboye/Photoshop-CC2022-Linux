@@ -33,6 +33,7 @@ fi
 # Global variables
 SELECTED_SCRIPT=""
 INSTALL_PATH=""
+BACKUP_FILE=""
 LAST_PATH_FILE="$HOME/.photoshop_last_path"
 VERBOSE=false
 KEEP_CACHE=false
@@ -40,6 +41,8 @@ SKIP_VERIFY=false
 SKIP_APPEARANCE=false
 PURGE=false
 KEEP_PERMISSIONS=false
+DESKTOP_NAME=""
+FORCE_DESKTOP=false
 
 # Load last used path
 load_last_path() {
@@ -60,12 +63,13 @@ show_main_menu() {
   local choice
   choice=$($DIALOG_CMD --title "Photoshop 2021 Manager" \
                     --menu "Select an action:" \
-                    15 60 5 \
+                    16 60 6 \
                     "1" "Install Photoshop (Standard)" \
                     "2" "Install Photoshop (with Camera Raw)" \
                     "3" "Uninstall Photoshop" \
                     "4" "Backup Installation" \
                     "5" "Restore from Backup" \
+                    "6" "Create Desktop Entry" \
                     3>&1 1>&2 2>&3)
   
   case $choice in
@@ -74,6 +78,7 @@ show_main_menu() {
     3) SELECTED_SCRIPT="uninstall" ;;
     4) SELECTED_SCRIPT="backup" ;;
     5) SELECTED_SCRIPT="restore" ;;
+    6) SELECTED_SCRIPT="desktop" ;;
     *) exit 0 ;;
   esac
 }
@@ -198,6 +203,32 @@ show_restore_options() {
   rm -f "$temp_file"
 }
 
+# Show options for desktop entry
+show_desktop_options() {
+  local temp_file=$(mktemp)
+  
+  # Get custom name
+  DESKTOP_NAME=$($DIALOG_CMD --title "Desktop Entry" \
+                             --inputbox "Enter name for desktop entry:" \
+                             8 40 "Photoshop 2021" \
+                             3>&1 1>&2 2>&3)
+  
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+  
+  # Show force option
+  $DIALOG_CMD --title "Desktop Entry" \
+              --yesno "Overwrite existing desktop entry?" \
+              6 40
+  
+  if [ $? -eq 0 ]; then
+    FORCE_DESKTOP=true
+  else
+    FORCE_DESKTOP=false
+  fi
+}
+
 # Input path with tab completion
 input_path() {
   local title="$1"
@@ -303,6 +334,13 @@ execute_script() {
       [ "$KEEP_PERMISSIONS" = true ] && cmd="$cmd -k"
       cmd="$cmd \"$BACKUP_FILE\" \"$INSTALL_PATH\""
       ;;
+    desktop)
+      title="Creating desktop entry..."
+      cmd="./scripts/create-desktop-entry.sh"
+      [ "$FORCE_DESKTOP" = true ] && cmd="$cmd --force"
+      [ -n "$DESKTOP_NAME" ] && cmd="$cmd --name \"$DESKTOP_NAME\""
+      cmd="$cmd \"$INSTALL_PATH\""
+      ;;
   esac
   
   # Show confirmation
@@ -360,6 +398,12 @@ main() {
           continue
         fi
         input_path "Select Restore Directory" "$INSTALL_PATH"
+        ;;
+      desktop)
+        if ! show_desktop_options; then
+          continue
+        fi
+        input_path "Select Photoshop Installation Directory" "$INSTALL_PATH"
         ;;
     esac
     
