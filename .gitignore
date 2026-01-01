@@ -1,2 +1,25 @@
 AdobePhotoshop2021.tar.xz
 .idea
+
+# Backup files
+photoshop-2021-backup-*.tar.xz
+photoshop-2021-backup-*.tar
+
+# Installation directories
+Photoshop*/
+Adobe-Photoshop*/
+wine-9.0/
+
+# Cache files
+.cache/photoshop2021-installer/
+.cache/photoshop2021cr-installer/
+
+# Temporary files
+*.bak
+*.bak2
+wine-tmp/
+allredist/
+winetricks
+
+# Desktop entries
+*.desktop
