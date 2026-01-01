@@ -143,6 +143,50 @@ cd LinuxPS
 - `-p, --purge` - Remove all files including cached downloads
 - `-h, --help` - Show help message
 
+### Backup Script
+
+```bash
+./scripts/backup-photoshop.sh [OPTIONS] /path/to/photoshop/installation
+```
+
+**Options:**
+- `-v, --verbose` - Show detailed output during backup
+- `-o, --output DIR` - Output directory for backup file (default: current directory)
+- `--no-compress` - Create uncompressed tarball (faster but larger)
+- `-h, --help` - Show help message
+
+**Examples:**
+```bash
+# Create compressed backup
+./scripts/backup-photoshop.sh /path/to/photoshop
+
+# Backup to specific directory
+./scripts/backup-photoshop.sh -o /backups /path/to/photoshop
+
+# Create uncompressed backup
+./scripts/backup-photoshop.sh --no-compress /path/to/photoshop
+```
+
+### Restore Script
+
+```bash
+./scripts/restore-photoshop.sh [OPTIONS] backup-file.tar.xz /path/to/restore
+```
+
+**Options:**
+- `-v, --verbose` - Show detailed output during restore
+- `-k, --keep-permissions` - Keep original file permissions
+- `-h, --help` - Show help message
+
+**Examples:**
+```bash
+# Restore from backup
+./scripts/restore-photoshop.sh photoshop-2021-backup-20240101-120000.tar.xz /new/path
+
+# Restore with verbose output
+./scripts/restore-photoshop.sh -v backup.tar.xz /opt/Photoshop
+```
+
 ## Installation Process
 
 The installer performs the following steps:
@@ -219,6 +263,90 @@ Use `--purge` to also remove cached downloads:
 ```bash
 ./scripts/uninstaller.sh --purge /path/to/install/directory
 ```
+
+## Backup and Restore
+
+The installer includes backup and restore scripts to easily move Photoshop installations between machines or create backups for safekeeping.
+
+### Creating a Backup
+
+To create a compressed backup of your Photoshop installation:
+
+```bash
+./scripts/backup-photoshop.sh /path/to/photoshop/installation
+```
+
+This creates a `.tar.xz` file containing:
+- ✅ Wine 9.0 installation
+- ✅ Photoshop program files
+- ✅ All settings and preferences
+- ✅ User configurations
+- ✅ Plugins and extensions
+- ❌ Installation cache (recreated as needed)
+- ❌ Temporary files
+
+**Backup Options:**
+- `-o, --output DIR` - Specify output directory
+- `--no-compress` - Create uncompressed tarball (faster but larger)
+- `-v, --verbose` - Show detailed output
+
+**Examples:**
+```bash
+# Backup to current directory
+./scripts/backup-photoshop.sh ~/Photoshop
+
+# Backup to specific directory
+./scripts/backup-photoshop.sh -o /backups ~/Photoshop
+
+# Create uncompressed backup
+./scripts/backup-photoshop.sh --no-compress ~/Photoshop
+```
+
+### Restoring from Backup
+
+To restore Photoshop on the same or another machine:
+
+```bash
+./scripts/restore-photoshop.sh backup-file.tar.xz /new/installation/path
+```
+
+The restore script automatically:
+- Updates all paths in the launcher script
+- Updates desktop entries if present
+- Recreates Wine symlinks
+- Fixes permissions for the new system
+
+**Restore Options:**
+- `-k, --keep-permissions` - Keep original file permissions
+- `-v, --verbose` - Show detailed output
+
+**Examples:**
+```bash
+# Restore to new location
+./scripts/restore-photoshop.sh photoshop-2021-backup-20240101-120000.tar.xz /opt/Photoshop
+
+# Restore with verbose output
+./scripts/restore-photoshop.sh -v backup.tar.xz ~/Photoshop-New
+```
+
+### Use Cases
+
+**Perfect for:**
+- Moving Photoshop between computers
+- Creating a clean backup before updates
+- Sharing a configured installation
+- Quick deployment on multiple machines
+- System migration
+
+**Backup Size:**
+- Compressed: ~2-3GB (vs 4GB original)
+- Uncompressed: ~3.5GB
+
+**Important Notes:**
+- Backup excludes temporary files to reduce size
+- Photoshop may need to reconfigure some settings on first launch after restore
+- Ensure the target system meets all requirements
+- Backup files can be restored on any Linux distribution
 
 ## File Structure After Installation
 
