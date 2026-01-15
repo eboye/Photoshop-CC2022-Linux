@@ -54,7 +54,6 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
   - xdotool (for appearance configuration)
 - **Write permissions** to the installation directory
 - **Active internet connection** (downloads ~2-3GB per application)
-- **For Illustrator 2021:** Custom Wine file in project root (see Quick Start)
 
 ### Installing Dependencies
 
@@ -81,26 +80,6 @@ yay -S gdown xdotool
 ```
 
 ## 🚀 Quick Start
-
-### ⚠️ Important: Illustrator 2021 Custom Wine Requirement
-
-**For optimal Illustrator 2021 performance**, you need to download and place the custom Wine in the project root:
-
-```bash
-# Download the custom Wine (required for Illustrator 2021)
-wget -O wine-illustrator-custom.tar.xz "https://web.archive.org/web/20231024185932if_/https://lulucloud.mywire.org/FileHosting/GithubProjects/Illustrator/wine-illustrator-custom.tar.xz"
-
-# Place it in the project root directory
-mv wine-illustrator-custom.tar.xz /path/to/LinuxPS/
-```
-
-**Why this is needed:**
-- Provides better GPU acceleration for Illustrator 2021
-- Fixes settings rendering issues
-- Ensures proper DirectX compatibility
-- Eliminates Wine version conflicts
-
-**Without this file, Illustrator 2021 will fall back to system Wine** which may have GPU acceleration issues.
 
 ### Using the TUI Manager (Recommended)
 
@@ -171,17 +150,8 @@ cd LinuxPS
 #### Illustrator 2021
 ```bash
 # Requires AdobeIllustrator2021.tar.xz in project root or specified location
-# AND wine-illustrator-custom.tar.xz in project root (see Quick Start section)
+# Custom Wine will be auto-downloaded if not found locally
 ./scripts/illustrator2021install.sh /path/to/install/directory
-```
-
-**Prerequisites for Illustrator 2021:**
-- `AdobeIllustrator2021.tar.xz` - Illustrator application files
-- `wine-illustrator-custom.tar.xz` - Custom Wine for optimal GPU performance
-
-Download the custom Wine:
-```bash
-wget -O wine-illustrator-custom.tar.xz "https://web.archive.org/web/20231024185932if_/https://lulucloud.mywire.org/FileHosting/GithubProjects/Illustrator/wine-illustrator-custom.tar.xz"
 ```
 
 ## ⚙️ Script Parameters

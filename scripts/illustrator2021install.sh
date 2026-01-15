@@ -144,8 +144,23 @@ if [ ! -d "$INSTALL_DIR/wine-illustrator-custom" ]; then
     log_info "Using local custom Wine: $LOCAL_WINE"
     tar -xf "$LOCAL_WINE" -C "$INSTALL_DIR/" || { log_error "Failed to extract local wine-illustrator-custom"; exit 1; }
   else
-    log_error "Local wine-illustrator-custom not found at $LOCAL_WINE"
-    exit 1
+    log_info "Local custom Wine not found, downloading..."
+    cd "$INSTALL_DIR"
+    
+    # Download custom wine-illustrator
+    WINE_ILLUSTRATOR_URL="https://web.archive.org/web/20231024185932if_/https://lulucloud.mywire.org/FileHosting/GithubProjects/Illustrator/wine-illustrator-custom.tar.xz"
+    if ! download_file "$WINE_ILLUSTRATOR_URL" "wine-illustrator-custom.tar.xz" "" "Custom Wine for Illustrator" "$SKIP_VERIFY" "$CACHE_DIR"; then
+      log_error "Failed to download custom wine-illustrator"
+      log_error "Please download it manually and place in project root:"
+      log_error "wget -O wine-illustrator-custom.tar.xz \"$WINE_ILLUSTRATOR_URL\""
+      exit 1
+    fi
+    
+    log_info "Extracting custom Wine..."
+    tar -xf wine-illustrator-custom.tar.xz -C "$INSTALL_DIR/" || { log_error "Failed to extract custom wine-illustrator"; exit 1; }
+    
+    # Clean up downloaded file
+    rm -f wine-illustrator-custom.tar.xz
   fi
   log_success "Custom wine-illustrator extracted"
 else
