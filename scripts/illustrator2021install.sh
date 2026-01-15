@@ -239,6 +239,13 @@ else
 fi
 
 log_step "Applying dark theme..."
+# Ensure Wine prefix is properly initialized
+if [ ! -f "$WINEPREFIX/user.reg" ]; then
+  log_info "Initializing Wine prefix for dark theme..."
+  env WINEPREFIX="$WINEPREFIX" PATH="$INSTALL_DIR/wine-illustrator-custom/bin:$PATH" "$INSTALL_DIR/wine-illustrator-custom/bin/wineboot" -u >/dev/null 2>&1 || true
+  sleep 2
+fi
+
 if [ -f "$WINEPREFIX/user.reg" ]; then
   # Add dark mode colors
   cat >> "$WINEPREFIX/user.reg" << 'EOF'
@@ -276,6 +283,47 @@ EOF
   log_success "Dark theme applied"
 else
   log_warning "Could not find user.reg to apply dark theme"
+  # Try alternative method - create the registry file directly
+  log_info "Attempting alternative dark theme application..."
+  mkdir -p "$WINEPREFIX"
+  cat > "$WINEPREFIX/user.reg" << 'EOF'
+
+WINE REGISTRY Version 2
+
+;; All keys relative to \\User\\Default
+
+[Control Panel\\Colors]
+"ActiveBorder"="59 59 59"
+"ActiveTitle"="0 0 0"
+"AppWorkspace"="37 37 37"
+"Background"="37 37 37"
+"ButtonAlternateFace"="180 180 180"
+"ButtonDkShadow"="105 105 105"
+"ButtonFace"="37 37 37"
+"ButtonHilight"="255 255 255"
+"ButtonLight"="220 220 220"
+"ButtonShadow"="105 105 105"
+"ButtonText"="255 255 255"
+"GrayText"="150 150 150"
+"Hilight"="51 51 51"
+"HilightText"="255 255 255"
+"InactiveBorder"="255 255 255"
+"InactiveTitle"="37 37 37"
+"InactiveTitleText"="200 200 200"
+"InfoText"="0 0 0"
+"InfoWindow"="255 255 255"
+"Menu"="37 37 37"
+"MenuBar"="37 37 37"
+"MenuHilight"="51 51 51"
+"MenuText"="255 255 255"
+"Scrollbar"="73 73 73"
+"TitleText"="255 255 255"
+"Window"="37 37 37"
+"WindowFrame"="100 100 100"
+"WindowText"="255 255 255"
+
+EOF
+  log_success "Dark theme applied via alternative method"
 fi
 
 # Step 4: Download redistributables (Wine-compatible versions)
