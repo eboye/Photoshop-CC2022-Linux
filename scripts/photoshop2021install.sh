@@ -192,6 +192,40 @@ else
   log_success "Windows 10 mode enabled"
 fi
 
+log_step "Applying Photoshop compatibility fixes..."
+# Create registry fixes for monitor/EDID issues and DXVK optimization
+cat > /tmp/photoshop_fixes.reg << 'EOF'
+REGEDIT4
+
+[HKEY_CURRENT_USER\System\CurrentControlSet\Control\GraphicsDrivers]
+"AdapterType"=dword:00000000
+"AdapterLuid"=hex:00,00,00,00,00,00,00,00
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\GraphicsDrivers]
+"AdapterType"=dword:00000000
+"AdapterLuid"=hex:00,00,00,00,00,00,00,00
+
+[HKEY_CURRENT_USER\Software\Wine\Direct3D]
+"VideoMemorySize"="2048"
+"StrictDrawOrdering"="disabled"
+"OffscreenRenderingMode"="fbo"
+
+[HKEY_CURRENT_USER\Software\Wine\DXVK]
+"dxgi.enableVulkan"="dword:00000000"
+"d3d11.enableVulkan"="dword:00000000"
+
+EOF
+
+# Apply the registry fixes
+if wine regedit /S /tmp/photoshop_fixes.reg >/dev/null 2>&1; then
+  log_success "Photoshop compatibility fixes applied"
+else
+  log_warning "Failed to apply Photoshop registry fixes"
+fi
+
+# Clean up
+rm -f /tmp/photoshop_fixes.reg
+
 log_step "Downloading redistributables..."
 cd "$INSTALL_DIR"
 if [ ! -d "allredist" ]; then
@@ -289,7 +323,12 @@ export WINEPREFIX="$WINEPREFIX"
 export WINELOADER="$WINE_DIR/bin/wine"
 export WINEDLLPATH="$WINE_DIR/lib/wine:$WINE_DIR/lib64/wine"
 export WINEDEBUG=-all
-export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+export WINEDLLOVERRIDES="winemenubuilder.exe=d;dxgi,d3d10core,d3d11,d3d12="
+
+# Disable DXVK for better Photoshop compatibility
+export __GL_SHADER_DISK_CACHE=1
+export __GL_SHADER_DISK_CACHE_PATH="\$WINEPREFIX"
+export WINEARCH=win64
 
 cd "\$WINEPREFIX/drive_c/Program Files/Adobe/Adobe Photoshop 2021"
 "$WINE_DIR/bin/wine" Photoshop.exe "\$@"
