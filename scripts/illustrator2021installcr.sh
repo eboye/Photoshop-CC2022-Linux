@@ -1,5 +1,5 @@
 #!/bin/bash
-# Photoshop 2021 - Wine 9.0 (Isolated, compatible version)
+# Illustrator CC 17 - Wine 9.0 (Isolated, compatible version)
 
 set -e
 
@@ -17,7 +17,7 @@ else
 fi
 
 # ===== CONFIGURATION =====
-readonly SCRIPT_VERSION="2.0"
+readonly SCRIPT_VERSION="1.0-CR"
 readonly WINE_VERSION="9.0"
 readonly WINE_URL="https://github.com/Kron4ek/Wine-Builds/releases/download/9.0/wine-9.0-amd64.tar.xz"
 readonly WINE_SHA256="cf0c09d4346dc10bc92ab674936292cff47eeb71ca7604b8e6303b7bdb97e2f6"
@@ -25,7 +25,10 @@ readonly WINETRICKS_URL="https://raw.githubusercontent.com/Winetricks/winetricks
 readonly WINETRICKS_SHA256=""
 readonly REDIST_URL="https://drive.google.com/uc?export=download&id=1qcmyHzWerZ39OhW0y4VQ-hOy7639bJPO"
 readonly REDIST_SHA256="a7cd24cecc984c10e6cbbdf77ebb8211bbc774cbc7d7e6fd9776f1eb13dbc9d4"
-readonly CACHE_DIR="$HOME/.cache/photoshop2021-installer"
+readonly CACHE_DIR="$HOME/.cache/illustratorcc17-installer"
+
+# Illustrator-specific configuration
+readonly ILLUSTRATOR_MD5="d470b541cef1339a66ea33a998801f83"
 
 # Parse arguments
 VERBOSE=false
@@ -33,7 +36,6 @@ INSTALL_DIR=""
 DRY_RUN=false
 KEEP_CACHE=false
 SKIP_VERIFY=false
-SKIP_APPEARANCE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -42,7 +44,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -V|--version)
-      echo "Photoshop 2021 Linux Installer v$SCRIPT_VERSION (Wine $WINE_VERSION)"
+      echo "Illustrator CC 17 Linux Installer (CR) v$SCRIPT_VERSION (Wine $WINE_VERSION)"
       exit 0
       ;;
     -n|--dry-run)
@@ -55,10 +57,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -s|--skip-verify)
       SKIP_VERIFY=true
-      shift
-      ;;
-    --skip-appearance)
-      SKIP_APPEARANCE=true
       shift
       ;;
     *)
@@ -77,16 +75,15 @@ if [ -z "$INSTALL_DIR" ]; then
   echo "  -n, --dry-run      Show what would be done without executing"
   echo "  -k, --keep-cache   Keep downloaded files in cache"
   echo "  -s, --skip-verify  Skip checksum verification (not recommended)"
-  echo "  --skip-appearance  Skip appearance configuration"
   exit 1
 fi
 
 INSTALL_DIR="$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd)"
 WINE_DIR="$INSTALL_DIR/wine-9.0"
-WINEPREFIX="$INSTALL_DIR/Adobe-Photoshop"
+WINEPREFIX="$INSTALL_DIR/Adobe-Illustrator"
 
 # Progress tracking
-TOTAL_STEPS=13
+TOTAL_STEPS=15
 CURRENT_STEP=0
 
 # Cleanup on exit
@@ -101,7 +98,7 @@ log_step() {
 # Get absolute paths
 WORK_DIR="$(dirname "$SCRIPT_DIR")"
 
-print_header "       Adobe Photoshop 2021 Installer for Linux           "
+print_header "      Adobe Illustrator CC 17 Installer for Linux"
 
 # Check system requirements
 check_requirements "$INSTALL_DIR"
@@ -175,11 +172,11 @@ else
   # Show spinner while wineboot runs
   while kill -0 $BOOT_PID 2>/dev/null; do
     for s in / - \\ \|; do
-      printf "\r    %s%s%s Initializing..." "$YELLOW" "$s" "$NC"
+      printf "\r    %s%s%s Initializing..." "${YELLOW}" "${s}" "${NC}"
       sleep 0.1
     done
   done
-  printf "\r    %s✓%s Initialized      \n" "$GREEN" "$NC"
+  printf "\r    %s✓%s Initialized      \n" "${GREEN}" "${NC}"
 fi
 
 log_step "Configuring Windows 10 mode..."
@@ -190,6 +187,49 @@ else
   log_info "Setting Windows version..."
   ./winetricks -q win10 >/dev/null 2>&1
   log_success "Windows 10 mode enabled"
+fi
+
+# Apply dark theme to wine
+log_step "Applying dark theme..."
+if [ -f "$WINEPREFIX/user.reg" ]; then
+  # Add dark mode colors
+  cat >> "$WINEPREFIX/user.reg" << 'EOF'
+[Control Panel\Colors] 1491939580
+#time=1d2b2fb5c69191c
+"ActiveBorder"="49 54 58"
+"ActiveTitle"="49 54 58"
+"AppWorkSpace"="60 64 72"
+"Background"="49 54 58"
+"ButtonAlternativeFace"="200 0 0"
+"ButtonDkShadow"="154 154 154"
+"ButtonFace"="49 54 58"
+"ButtonHilight"="119 126 140"
+"ButtonLight"="60 64 72"
+"ButtonShadow"="60 64 72"
+"ButtonText"="219 220 222"
+"GradientActiveTitle"="49 54 58"
+"GradientInactiveTitle"="49 54 58"
+"GrayText"="155 155 155"
+"Hilight"="119 126 140"
+"HilightText"="255 255 255"
+"InactiveBorder"="49 54 58"
+"InactiveTitle"="49 54 58"
+"InactiveTitleText"="219 220 222"
+"InfoText"="159 167 180"
+"InfoWindow"="49 54 58"
+"Menu"="49 54 58"
+"MenuBar"="49 54 58"
+"MenuHilight"="119 126 140"
+"MenuText"="219 220 222"
+"Scrollbar"="73 78 88"
+"TitleText"="219 220 222"
+"Window"="35 38 41"
+"WindowFrame"="49 54 58"
+"WindowText"="219 220 222"
+EOF
+  log_success "Dark theme applied"
+else
+  log_warning "Could not find user.reg to apply dark theme"
 fi
 
 log_step "Downloading redistributables..."
@@ -210,27 +250,41 @@ else
   log_info "Using existing redistributables"
 fi
 
-# Find Photoshop archive
-log_step "Locating Photoshop archive..."
-PS_ARCHIVE="$WORK_DIR/AdobePhotoshop2021.tar.xz"
+# Find Illustrator archive
+log_step "Locating Illustrator archive..."
+AI_ARCHIVE="$WORK_DIR/illustratorCC17.tgz"
 
-if [ ! -f "$PS_ARCHIVE" ]; then
-  if [ -f "$SCRIPT_DIR/AdobePhotoshop2021.tar.xz" ]; then
-    PS_ARCHIVE="$SCRIPT_DIR/AdobePhotoshop2021.tar.xz"
-  elif [ -f "$INSTALL_DIR/AdobePhotoshop2021.tar.xz" ]; then
-    PS_ARCHIVE="$INSTALL_DIR/AdobePhotoshop2021.tar.xz"
+if [ ! -f "$AI_ARCHIVE" ]; then
+  if [ -f "$SCRIPT_DIR/illustratorCC17.tgz" ]; then
+    AI_ARCHIVE="$SCRIPT_DIR/illustratorCC17.tgz"
+  elif [ -f "$INSTALL_DIR/illustratorCC17.tgz" ]; then
+    AI_ARCHIVE="$INSTALL_DIR/illustratorCC17.tgz"
   else
-    log_error "Cannot find AdobePhotoshop2021.tar.xz"
+    log_error "Cannot find illustratorCC17.tgz"
     exit 1
   fi
 fi
-log_success "Found: $(basename "$PS_ARCHIVE")"
 
-log_step "Extracting Photoshop..."
+# Verify Illustrator archive MD5
+if [ "$SKIP_VERIFY" != "true" ]; then
+  log_info "Verifying Illustrator archive..."
+  ACTUAL_MD5=$(md5sum "$AI_ARCHIVE" | cut -d' ' -f1)
+  if [ "$ACTUAL_MD5" != "$ILLUSTRATOR_MD5" ]; then
+    log_error "MD5 checksum mismatch for Illustrator archive"
+    log_error "Expected: $ILLUSTRATOR_MD5"
+    log_error "Actual: $ACTUAL_MD5"
+    exit 1
+  fi
+  log_success "Illustrator archive verified"
+fi
+
+log_success "Found: $(basename "$AI_ARCHIVE")"
+
+log_step "Extracting Illustrator..."
 cd "$INSTALL_DIR"
 log_info "Extracting archive... (this may take a minute)"
-tar -xf "$PS_ARCHIVE"
-log_success "Photoshop extracted"
+tar -xzf "$AI_ARCHIVE"
+log_success "Illustrator extracted"
 
 log_step "Installing Wine components..."
 log_info "Installing fonts, libraries, and DXVK... (5-10 minutes)"
@@ -266,21 +320,21 @@ else
   log_success "VC++ redistributables installed"
 fi
 
-log_step "Installing Photoshop..."
+log_step "Installing Illustrator..."
 mkdir -p "$WINEPREFIX/drive_c/Program Files/Adobe"
-if mv "$INSTALL_DIR/Adobe Photoshop 2021" "$WINEPREFIX/drive_c/Program Files/Adobe/" 2>/dev/null; then
-  log_success "Photoshop installed to Wine prefix"
+if mv "$INSTALL_DIR/IllustratorCC17" "$WINEPREFIX/drive_c/Program Files/Adobe/" 2>/dev/null; then
+  log_success "Illustrator installed to Wine prefix"
 else
-  log_error "Could not find extracted Photoshop directory"
+  log_error "Could not find extracted Illustrator directory"
   log_error "Available directories in $INSTALL_DIR:"
   for dir in "$INSTALL_DIR"/*; do
     [ -d "$dir" ] && echo "  $(basename "$dir")"
-  done | grep -i photoshop || echo "  (No directories containing 'photoshop' found)"
+  done | grep -i illustrator || echo "  (No directories containing 'illustrator' found)"
   exit 1
 fi
 
 log_step "Creating launcher..."
-LAUNCHER="$INSTALL_DIR/launch-photoshop.sh"
+LAUNCHER="$INSTALL_DIR/launch-illustrator.sh"
 cat > "$LAUNCHER" << EOF
 #!/usr/bin/env bash
 export PATH="$WINE_DIR/bin:\$PATH"
@@ -291,32 +345,31 @@ export WINEDLLPATH="$WINE_DIR/lib/wine:$WINE_DIR/lib64/wine"
 export WINEDEBUG=-all
 export WINEDLLOVERRIDES="winemenubuilder.exe=d"
 
-cd "\$WINEPREFIX/drive_c/Program Files/Adobe/Adobe Photoshop 2021"
-"$WINE_DIR/bin/wine" Photoshop.exe "\$@"
+cd "\$WINEPREFIX/drive_c/Program Files/Adobe/IllustratorCC17"
+"$WINE_DIR/bin/wine" IllustratorCC64.exe "\$@"
 EOF
 
 chmod +x "$LAUNCHER"
 log_success "Launcher created"
 
-# Create desktop entry
 log_step "Creating desktop entry..."
-if ./create-desktop-entry.sh "$INSTALL_DIR" >/dev/null 2>&1; then
+DESKTOP_ENTRY="$HOME/.local/share/applications/illustratorCC.desktop"
+cat > "$DESKTOP_ENTRY" << EOF
+[Desktop Entry]
+Encoding=UTF-8
+Name=Illustrator CC 17
+Exec=bash $LAUNCHER
+Type=Application
+StartupNotify=true
+Comment=Illustrator CC 17 for Linux
+Icon=application-x-illustrator
+StartupWMClass=illustrator.exe
+EOF
+
+if [ -f "$DESKTOP_ENTRY" ]; then
   log_success "Desktop entry created"
 else
   log_warning "Failed to create desktop entry"
-fi
-
-# Auto-run Photoshop and apply appearance config
-if [ "$SKIP_APPEARANCE" != "true" ]; then
-  log_step "Configuring appearance..."
-  
-  # Wait for Photoshop to start and initialize
-  wait_for_photoshop "$WINE_DIR"
-  
-  # Apply appearance configuration
-  apply_appearance_config "$INSTALL_DIR" "$WINE_DIR" "$WINEPREFIX"
-  
-  log_success "Appearance configuration complete"
 fi
 
 # Final cleanup
@@ -326,14 +379,15 @@ sleep 2
 echo ""
 echo -e "${BOLD}${GREEN}Installation completed successfully!${NC}"
 echo ""
-echo -e "${BLUE}To launch Photoshop:${NC}"
+echo -e "${BLUE}To launch Illustrator:${NC}"
 echo "  $LAUNCHER"
 echo ""
 echo -e "${BLUE}Or from the command line:${NC}"
 echo "  cd \"$INSTALL_DIR\""
-echo "  ./launch-photoshop.sh"
+echo "  ./launch-illustrator.sh"
 echo ""
-echo -e "${GREEN}✓${NC} Photoshop 2021 installed"
-if [ "$SKIP_APPEARANCE" != "true" ]; then
-  echo -e "${GREEN}✓${NC} Appearance configuration applied"
-fi
+echo -e "${BLUE}Or from the desktop/applications menu:${NC}"
+echo "  Look for 'Illustrator CC 17' in your applications menu"
+echo "  Or double-click the icon on your desktop"
+echo ""
+echo -e "${GREEN}✓${NC} Illustrator CC 17 installed"

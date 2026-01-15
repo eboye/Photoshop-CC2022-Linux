@@ -67,10 +67,35 @@ fi
 
 # Check if it's a Photoshop installation
 LAUNCHER="$INSTALL_DIR/launch-photoshop.sh"
-if [ ! -f "$LAUNCHER" ]; then
+PHOTOSHOP_EXE="$INSTALL_DIR/Adobe-Photoshop/drive_c/Program Files/Adobe/Adobe Photoshop 2021/Photoshop.exe"
+
+if [ ! -f "$LAUNCHER" ] && [ ! -f "$PHOTOSHOP_EXE" ]; then
   log_error "Not a valid Photoshop installation directory"
-  log_error "Missing launch-photoshop.sh"
+  log_error "Missing launcher or Photoshop executable"
   exit 1
+fi
+
+# Use launcher if exists, otherwise create one
+if [ ! -f "$LAUNCHER" ] && [ -f "$PHOTOSHOP_EXE" ]; then
+  log_info "Creating launcher script..."
+  WINE_DIR="$INSTALL_DIR/wine-9.0"
+  WINEPREFIX="$INSTALL_DIR/Adobe-Photoshop"
+  
+  cat > "$LAUNCHER" << EOF
+#!/usr/bin/env bash
+export PATH="$WINE_DIR/bin:\$PATH"
+export LD_LIBRARY_PATH="$WINE_DIR/lib:$WINE_DIR/lib64:\${LD_LIBRARY_PATH}"
+export WINEPREFIX="$WINEPREFIX"
+export WINELOADER="$WINE_DIR/bin/wine"
+export WINEDLLPATH="$WINE_DIR/lib/wine:$WINE_DIR/lib64/wine"
+export WINEDEBUG=-all
+export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+
+cd "\$WINEPREFIX/drive_c/Program Files/Adobe/Adobe Photoshop 2021"
+"$WINE_DIR/bin/wine" Photoshop.exe "\$@"
+EOF
+  
+  chmod +x "$LAUNCHER"
 fi
 
 # Set default name
