@@ -1,6 +1,6 @@
 # Adobe Creative Suite for Linux
 
-A complete suite of installers for Adobe Creative Cloud applications on Linux using Wine 9.0. This project provides installers for Photoshop CC 2021, Illustrator CC 17, and Illustrator 2021 with automatic desktop integration, backup/restore functionality, and unified management through a TUI interface.
+A complete suite of installers for Adobe Creative Cloud applications on Linux using custom Wine builds. This project provides installers for Photoshop CC 2021, Illustrator CC 17, and Illustrator 2021 with automatic desktop integration, backup/restore functionality, and unified management through a TUI interface.
 
 **DISCLAIMER:**
 **Please use this software only if you have active Adobe subscriptions. I'm not responsible for any use without subscription.**
@@ -9,13 +9,12 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 
 - **Photoshop CC 2021** - Full compatibility with Camera Raw 14.3 (CR version)
 - **Illustrator CC 17** - Legacy Illustrator with full feature support
-- **Illustrator 2021** - Latest Illustrator with modern features
+- **Illustrator 2021** - Latest Illustrator with modern features and custom Wine optimization
 
 ## ✨ Features
 
 ### For All Applications
-- **Wine 9.0** isolated installation (doesn't affect system Wine)
-- **DXVK and VKD3D** for better graphics performance
+- **Isolated Wine installations** (doesn't affect system Wine)
 - **Automatic dark theme** with Windows 10 mode
 - **Parallel downloads** for faster installation
 - **Checksum verification** for all downloads
@@ -25,16 +24,20 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 - **Backup and restore** functionality
 - **Unified TUI manager** for easy script management
 
-![Photoshop CC 2021 running on Linux](images/photoshop.png)
-
 ### Photoshop Specific
 - **Camera Raw 14.3** included and pre-installed (CR version)
 - **Automatic appearance configuration** with font antialiasing
+- **Wine 9.0** for optimal compatibility
 
-### Illustrator Specific
-- **Custom Wine builds** (Illustrator 2021) or optimized system Wine
-- **Vector graphics optimization** with proper font rendering
-- **CMYK color support** through Wine components
+### Illustrator 2021 Specific (NEW!)
+- **Custom wine-illustrator build** for maximum Adobe compatibility
+- **Adobe service bypass** with CSXS registry fixes
+- **Automatic VC++ redistributable installation** via winetricks
+- **Missing DLL auto-fix** for seamless operation
+- **No system wine dependency** - completely isolated
+- **Optimized for Adobe Creative Cloud** applications
+
+![Photoshop CC 2021 running on Linux](images/photoshop.png)
 
 ## 📋 Requirements
 
@@ -49,7 +52,6 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
   - gdown (for Google Drive downloads)
   - 7z (for Camera Raw installation)
   - xdotool (for appearance configuration)
-- **Vulkan-capable GPU or APU** (older GPUs may encounter issues)
 - **Write permissions** to the installation directory
 - **Active internet connection** (downloads ~2-3GB per application)
 - **For Illustrator 2021:** Custom Wine file in project root (see Quick Start)
