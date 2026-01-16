@@ -91,6 +91,7 @@ The easiest way to manage all Adobe applications is using the unified TUI manage
 
 This provides a user-friendly menu to:
 - Install any Adobe application (Photoshop, Illustrator CC 17, Illustrator 2021)
+- **Build Flatpak packages** for easy distribution and installation
 - Uninstall applications
 - Create backups and restore installations
 - Manage desktop entries
@@ -254,6 +255,46 @@ Use `--purge` to also remove cached downloads:
 ```bash
 ./scripts/[uninstaller].sh --purge /path/to/install/directory
 ```
+
+## 📦 Flatpak Packaging
+
+For easy distribution and sandboxed installation, both applications can be packaged as Flatpaks:
+
+### Using the TUI Manager
+```bash
+./scripts/photoshop-manager.sh
+# Select "Build Flatpak Packages" from the menu
+```
+
+### Manual Flatpak Building
+```bash
+# Build both applications with bundle export
+./flatpak/build-flatpaks.sh all --export
+
+# Build individual applications
+./flatpak/build-flatpaks.sh photoshop2021
+./flatpak/build-flatpaks.sh illustrator2021
+```
+
+### Installing Flatpak Packages
+```bash
+# Install from local bundle
+flatpak install --user com.adobe.photoshop2021.flatpak
+flatpak install --user com.adobe.illustrator2021.flatpak
+
+# Run installed Flatpaks
+flatpak run com.adobe.photoshop2021
+flatpak run com.adobe.illustrator2021
+```
+
+**Flatpak Benefits:**
+- **Sandboxed security** - Isolated from system files
+- **Easy installation** - One-command install/remove
+- **Cross-distribution** - Works on any Linux distro with Flatpak
+- **Automatic updates** - Via Flatpak ecosystem
+- **Dependency management** - Handled automatically
+
+See [flatpak/README.md](flatpak/README.md) for detailed Flatpak documentation.
 
 ## 💾 Backup and Restore
 

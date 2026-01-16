@@ -667,14 +667,30 @@ EOF
   log_success "Launcher script created"
 fi
 
+# Copy icons to installation directory
+log_step "Copying icons..."
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+if [ -d "$PROJECT_ROOT/images/icons" ]; then
+  mkdir -p "$INSTALL_DIR/icons"
+  cp -r "$PROJECT_ROOT/images/icons" "$INSTALL_DIR/"
+  log_success "Icons copied to installation directory"
+else
+  log_warning "Icons folder not found, desktop entry may use generic icons"
+fi
+
 # Step 13: Create desktop entry (if requested)
 if [ "$CREATE_DESKTOP" = true ]; then
   log_step "Creating desktop entry..."
   if [ "$DRY_RUN" = true ]; then
-    log_info "DRY RUN: Would create desktop entry (using generic icon)"
+    log_info "DRY RUN: Would create desktop entry"
   else
-    # Create desktop entry with generic icon
-    cat > ~/.local/share/applications/illustrator2021.desktop << EOF
+    # Use the desktop entry creation script which now handles icons properly
+    if ./create-illustrator2021-desktop.sh "$INSTALL_DIR" >/dev/null 2>&1; then
+      log_success "Desktop entry created"
+    else
+      log_warning "Failed to create desktop entry, creating fallback..."
+      # Fallback desktop entry with generic icon
+      cat > ~/.local/share/applications/illustrator2021.desktop << EOF
 [Desktop Entry]
 Name=Adobe Illustrator 2021
 Exec=bash -c "$LAUNCHER %F"
@@ -684,8 +700,8 @@ Categories=Graphics;
 Icon=application-x-illustrator
 StartupWMClass=illustrator.exe
 EOF
-    
-    log_success "Desktop entry created (using generic icon)"
+      log_success "Fallback desktop entry created"
+    fi
   fi
 else
   log_info "Desktop entry creation skipped"

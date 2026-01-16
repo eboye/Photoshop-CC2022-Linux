@@ -130,22 +130,30 @@ mkdir -p "$DESKTOP_FILE_DIR"
 
 # Handle icon
 if [ -z "$ICON_PATH" ]; then
-  # Create a symbolic icon using ImageMagick if available
+  # Copy icon from project icons folder
+  PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+  SOURCE_ICON="$PROJECT_ROOT/images/icons/photoshop.png"
   ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
   mkdir -p "$ICON_DIR"
   ICON_PATH="$ICON_DIR/adobe-photoshop-2021.png"
   
-  if command -v convert >/dev/null 2>&1; then
-    # Create a simple icon
-    convert -size 256x256 xc:blue \
-            -font Arial -pointsize 48 -fill white -gravity center \
-            -annotate +0+0 "Ps" \
-            "$ICON_PATH" 2>/dev/null || true
-  fi
-  
-  # If icon creation failed, use a generic icon
-  if [ ! -f "$ICON_PATH" ]; then
-    ICON_PATH="applications-graphics"
+  # Copy the PNG icon if it exists
+  if [ -f "$SOURCE_ICON" ]; then
+    cp "$SOURCE_ICON" "$ICON_PATH"
+    log_success "Icon copied from project icons folder"
+  else
+    # Fallback: Create a simple icon using ImageMagick if available
+    if command -v convert >/dev/null 2>&1; then
+      convert -size 256x256 xc:blue \
+              -font Arial -pointsize 48 -fill white -gravity center \
+              -annotate +0+0 "Ps" \
+              "$ICON_PATH" 2>/dev/null || true
+    fi
+    
+    # If icon creation still failed, use a generic icon
+    if [ ! -f "$ICON_PATH" ]; then
+      ICON_PATH="applications-graphics"
+    fi
   fi
 fi
 

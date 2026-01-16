@@ -132,16 +132,21 @@ fi
 
 # Step 3: Handle icon (local only)
 log_step "Setting up icon..."
-ICON_FILE="$HOME/.local/share/icons/illustrator2021.svg"
+ICON_FILE="$HOME/.local/share/icons/illustrator2021.png"
 
 mkdir -p ~/.local/share/icons/
 
-# Use local icon if exists, otherwise use generic icon
-if [ -f "$ICON_FILE" ] && [ "$FORCE" != "true" ]; then
-  log_info "Icon already exists"
+# Copy icon from project icons folder
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+SOURCE_ICON="$PROJECT_ROOT/images/icons/illustrator.png"
+
+# Use project icon if exists, otherwise use generic icon
+if [ -f "$SOURCE_ICON" ]; then
+  cp "$SOURCE_ICON" "$ICON_FILE"
   ICON_NAME="illustrator2021"
+  log_success "Icon copied from project icons folder"
 else
-  # Try to find local icon first
+  # Fallback: Try to find local icon first
   LOCAL_ICON_LOCATIONS=(
     "$HOME/AdobeIllustrator2021.svg"
     "$(dirname "$SCRIPT_DIR")/AdobeIllustrator2021.svg"

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Adobe Photoshop 2021
+GenericName=Image Editor
+Comment=Professional image editing software
+Exec=launch-photoshop.sh
+Icon=com.adobe.photoshop2021
+Type=Application
+Categories=Graphics;Photography;RasterGraphics;
+MimeType=image/jpeg;image/png;image/tiff;image/bmp;image/gif;image/x-psd;application/x-photoshop;
+StartupWMClass=Photoshop
+StartupNotify=true
+X-Flatpak=com.adobe.photoshop2021

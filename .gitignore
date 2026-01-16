@@ -25,5 +25,8 @@ wine-tmp/
 allredist/
 winetricks
 
-# Desktop entries
-*.desktop
+# Build temp directory - exclude from IDE
+.build-temp/
+
+# Build output directory
+build/

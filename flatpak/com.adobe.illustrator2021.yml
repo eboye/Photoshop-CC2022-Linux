@@ -1,0 +1,107 @@
+app-id: com.adobe.illustrator2021
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+command: launch-illustrator.sh
+
+finish-args:
+  - --allow=devel
+  - --allow=multiarch
+  - --share=network
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=all
+  - --persist=.wine
+  - --persist=Adobe-Illustrator
+  - --env=LD_LIBRARY_PATH=/app/lib:/app/lib/i386-linux-gnu
+  - --env=PATH=/app/bin:/app/wine-illustrator/bin:/usr/bin
+  - --env=WINEPREFIX=/var/data/Adobe-Illustrator
+  - --env=WINEDLLOVERRIDES="winemenubuilder.exe=d;mshtml=d"
+  - --env=WINE_MONO_ARCH=64
+  - --require-version=1.1.2
+
+# No inherited extensions
+
+add-extensions:
+  org.freedesktop.Platform.Compat.i386:
+    directory: lib/i386-linux-gnu
+    version: "49"
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /man
+  - /share/doc
+  - /share/man
+  - '*.la'
+  - '*.a'
+
+modules:
+  # Wine 7.12 TKG for prefix setup
+  - name: wine-712-staging-tkg
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/wine-712-staging-tkg
+      - cp -a * /app/wine-712-staging-tkg/
+    sources:
+      - type: archive
+        url: https://github.com/Kron4ek/Wine-Builds/releases/download/7.12/wine-7.12-staging-tkg-amd64.tar.xz
+        sha256: e0bc3d91faa5fbe5ab15a0cf44f359b81b882fc50bf558c7b66d9357c61850d3
+
+  # Custom Wine for Illustrator (your existing wine-illustrator-custom)
+  - name: wine-illustrator-custom
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/wine-illustrator
+      - cp -a * /app/wine-illustrator/
+    sources:
+      - type: archive
+        url: file:///home/eboye/GitHub/LinuxPS/wine-illustrator-custom.tar.xz
+        sha256: c8cff5e53db1e9073338281d227815049fb52adc2c16ef16fe445502562458c5
+
+  # Winetricks for installing components
+  - name: winetricks
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 winetricks /app/bin/winetricks
+    sources:
+      - type: file
+        url: https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks
+        sha256: 7f29a4ec7c559af18e88f1c0d012c2b0873c5228158511c3b5f4c9b127b9a733
+
+  # Adobe Illustrator 2021 Application
+  - name: adobe-illustrator2021
+    buildsystem: simple
+    build-commands:
+      - mkdir -p "/app/Adobe-Illustrator/drive_c/Program Files/Adobe Illustrator 2021"
+      - cp -a * "/app/Adobe-Illustrator/drive_c/Program Files/Adobe Illustrator 2021/"
+    sources:
+      - type: archive
+        url: file:///home/eboye/GitHub/LinuxPS/AdobeIllustrator2021.tar.xz
+        sha256: 7e36f422d609cdff322eef209ff034be17686bf8b78ebb6354abb42dd70a94cc
+
+  # Launcher Script
+  - name: launcher
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 launch-illustrator.sh /app/bin/launch-illustrator.sh
+    sources:
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/scripts/launch-illustrator.sh
+        sha256: e784e1a11b98e19a06442da6327431531c219bc8fa5f37d7d45a76e4cacf9c99
+
+  # Desktop Entry
+  - name: desktop-entry
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 com.adobe.illustrator2021.desktop /app/share/applications/com.adobe.illustrator2021.desktop
+      - install -Dm644 illustrator.png /app/share/icons/hicolor/256x256/apps/com.adobe.illustrator2021.png
+    sources:
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/flatpak/com.adobe.illustrator2021.desktop
+        sha256: 1a686248191a6166268d1c545c940452fbed30a17727365018e3a308e3117cda
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/images/icons/illustrator.png
+        sha256: 694394dfd6cb6c8b77846e4c98b0910c2e948fbf433603ad0064882335b2ff64

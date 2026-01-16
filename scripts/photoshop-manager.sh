@@ -82,7 +82,7 @@ show_main_menu() {
   local choice
   choice=$($DIALOG_CMD --title "Adobe Creative Suite Manager" \
                     --menu "Select an action:" \
-                    22 60 12 \
+                    24 60 14 \
                     "1" "Install Photoshop (Standard)" \
                     "2" "Install Photoshop (with Camera Raw)" \
                     "3" "Install Illustrator CC 17" \
@@ -90,9 +90,10 @@ show_main_menu() {
                     "5" "Uninstall Photoshop" \
                     "6" "Uninstall Illustrator CC 17" \
                     "7" "Uninstall Illustrator 2021" \
-                    "8" "Backup Installation" \
-                    "9" "Restore from Backup" \
-                    "10" "Utilities" \
+                    "8" "Build Flatpak Packages" \
+                    "9" "Backup Installation" \
+                    "10" "Restore from Backup" \
+                    "11" "Utilities" \
                     3>&1 1>&2 2>&3)
   
   case $choice in
@@ -103,9 +104,10 @@ show_main_menu() {
     5) SELECTED_SCRIPT="uninstall" ;;
     6) SELECTED_SCRIPT="uninstall-illustrator" ;;
     7) SELECTED_SCRIPT="uninstall-illustrator2021" ;;
-    8) SELECTED_SCRIPT="backup" ;;
-    9) SELECTED_SCRIPT="restore" ;;
-    10) show_utilities_menu ;;
+    8) show_flatpak_menu ;;
+    9) SELECTED_SCRIPT="backup" ;;
+    10) SELECTED_SCRIPT="restore" ;;
+    11) show_utilities_menu ;;
     *) exit 0 ;;
   esac
 }
@@ -319,6 +321,223 @@ show_illustrator2021_options() {
   rm -f "$temp_file"
 }
 
+# Show Flatpak menu
+show_flatpak_menu() {
+  local choice
+  choice=$($DIALOG_CMD --title "Flatpak Package Builder" \
+                    --menu "Select Flatpak action:" \
+                    12 60 5 \
+                    "1" "Build Photoshop 2021 Flatpak" \
+                    "2" "Build Illustrator 2021 Flatpak" \
+                    "3" "Build Both Applications" \
+                    "4" "Export Flatpak Bundles" \
+                    "5" "Back to Main Menu" \
+                    3>&1 1>&2 2>&3)
+  
+  case $choice in
+    1) build_flatpak "photoshop2021" ;;
+    2) build_flatpak "illustrator2021" ;;
+    3) build_flatpak "all" ;;
+    4) export_flatpak_bundles ;;
+    5) return ;;
+    *) return ;;
+  esac
+}
+
+# Build Flatpak function
+build_flatpak() {
+  local app="$1"
+  local script_dir="$(dirname "$SCRIPT_DIR")"
+  local flatpak_script="$script_dir/flatpak/build-flatpaks.sh"
+  
+  if [ ! -f "$flatpak_script" ]; then
+    $DIALOG_CMD --title "Error" \
+                --msgbox "Flatpak build script not found:\n$flatpak_script\n\nMake sure the flatpak folder exists in the project." \
+                10 50
+    return
+  fi
+  
+  # Check dependencies
+  local missing_deps=""
+  
+  if ! command -v flatpak >/dev/null 2>&1; then
+    missing_deps="$missing_deps • flatpak\n"
+  fi
+  
+  if ! command -v flatpak-builder >/dev/null 2>&1; then
+    missing_deps="$missing_deps • flatpak-builder\n"
+  fi
+  
+  if [ -n "$missing_deps" ]; then
+    $DIALOG_CMD --title "Missing Dependencies" \
+                --msgbox "The following required packages are missing:\n\n$missing_deps\nInstall with:\n\nUbuntu/Debian:\nsudo apt install flatpak flatpak-builder\n\nFedora:\nsudo dnf install flatpak flatpak-builder\n\nArch Linux:\nsudo pacman -S flatpak flatpak-builder\n\nopenSUSE:\nsudo zypper install flatpak flatpak-builder" \
+                18 70
+    return
+  fi
+  
+  # Check if Flathub is configured
+  if ! flatpak remotes | grep -q flathub; then
+    $DIALOG_CMD --title "Flathub Not Configured" \
+                --yesno "Flathub repository is not configured.\n\nWould you like to add it now?\n\nThis will run:\nflatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo" \
+                10 60
+    
+    if [ $? -eq 0 ]; then
+      if flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo 2>/tmp/flathub_setup.log; then
+        $DIALOG_CMD --title "Success" \
+                    --msgbox "Flathub repository added successfully!" \
+                    6 40
+      else
+        $DIALOG_CMD --title "Setup Failed" \
+                    --msgbox "Failed to add Flathub repository.\n\nCheck the logs at: /tmp/flathub_setup.log" \
+                    8 50
+        return
+      fi
+    else
+      $DIALOG_CMD --title "Warning" \
+                  --msgbox "Continuing without Flathub may cause build issues.\n\nYou can add it later with:\nflatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo" \
+                  10 60
+    fi
+  fi
+  
+  # Check if required runtimes are available
+  local missing_runtimes=""
+  
+  if ! flatpak list | grep -q "org.gnome.Platform.*45"; then
+    missing_runtimes="$missing_runtimes • org.gnome.Platform//45\n"
+  fi
+  
+  if ! flatpak list | grep -q "org.gnome.Sdk.*45"; then
+    missing_runtimes="$missing_runtimes • org.gnome.Sdk//45\n"
+  fi
+  
+  # Note: org.winehq.Wine is not on Flathub, we'll build without it as base
+  
+  if [ -n "$missing_runtimes" ]; then
+    $DIALOG_CMD --title "Missing Runtimes" \
+                --yesno "The following Flatpak runtimes are missing:\n\n$missing_runtimes\nWould you like to install them now?\n\nThis may take several minutes." \
+                12 60
+    
+    if [ $? -eq 0 ]; then
+      $DIALOG_CMD --title "Installing Runtimes" \
+                  --infobox "Installing required Flatpak runtimes...\nThis may take 10-20 minutes." \
+                  6 50
+      
+      if flatpak install --user flathub org.gnome.Platform//45 org.gnome.Sdk//45 -y >/tmp/runtimes_install.log 2>&1; then
+        $DIALOG_CMD --title "Success" \
+                    --msgbox "Runtimes installed successfully!" \
+                    6 40
+      else
+        $DIALOG_CMD --title "Installation Failed" \
+                    --msgbox "Failed to install some runtimes.\n\nCheck the logs at: /tmp/runtimes_install.log" \
+                    8 50
+        return
+      fi
+    fi
+  fi
+  
+  # Show build options
+  local temp_file=$(mktemp)
+  $DIALOG_CMD --title "Flatpak Build Options" \
+              --separate-output \
+              --checklist "Select build options:" \
+              10 50 2 \
+              "EXPORT" "Export bundles after building" OFF \
+              2> "$temp_file"
+  
+  if [ $? -eq 0 ]; then
+    local export_bundle=false
+    if grep -q "EXPORT" "$temp_file" 2>/dev/null; then
+      export_bundle=true
+    fi
+    
+    local build_cmd="$flatpak_script $app"
+    if [ "$export_bundle" = true ]; then
+      build_cmd="$build_cmd --export"
+    fi
+    
+    # Show progress dialog
+    $DIALOG_CMD --title "Building Flatpak" \
+                --infobox "Building $app Flatpak package...\nThis may take 10-30 minutes.\n\nCommand: $build_cmd" \
+                8 50
+    
+    # Run the build command
+    if $build_cmd >/tmp/flatpak_build.log 2>&1; then
+      $DIALOG_CMD --title "Success" \
+                  --msgbox "Flatpak build completed successfully!\n\nLogs saved to: /tmp/flatpak_build.log" \
+                  8 50
+    else
+      $DIALOG_CMD --title "Build Failed" \
+                  --msgbox "Flatpak build failed.\n\nCheck the logs at: /tmp/flatpak_build.log" \
+                  8 50
+    fi
+  fi
+  
+  rm -f "$temp_file"
+}
+
+# Export Flatpak bundles function
+export_flatpak_bundles() {
+  local script_dir="$(dirname "$SCRIPT_DIR")"
+  local flatpak_script="$script_dir/flatpak/build-flatpaks.sh"
+  
+  if [ ! -f "$flatpak_script" ]; then
+    $DIALOG_CMD --title "Error" \
+                --msgbox "Flatpak build script not found:\n$flatpak_script" \
+                8 50
+    return
+  fi
+  
+  # Check dependencies
+  if ! command -v flatpak >/dev/null 2>&1 || ! command -v flatpak-builder >/dev/null 2>&1; then
+    $DIALOG_CMD --title "Missing Dependencies" \
+                --msgbox "Flatpak and/or flatpak-builder are not installed.\n\nInstall with:\n\nUbuntu/Debian:\nsudo apt install flatpak flatpak-builder\n\nFedora:\nsudo dnf install flatpak flatpak-builder\n\nArch Linux:\nsudo pacman -S flatpak flatpak-builder\n\nopenSUSE:\nsudo zypper install flatpak flatpak-builder" \
+                16 70
+    return
+  fi
+  
+  # Show bundle selection
+  local temp_file=$(mktemp)
+  $DIALOG_CMD --title "Export Flatpak Bundles" \
+              --separate-output \
+              --checklist "Select bundles to export:" \
+              10 50 2 \
+              "PHOTOSHOP" "Photoshop 2021" OFF \
+              "ILLUSTRATOR" "Illustrator 2021" OFF \
+              2> "$temp_file"
+  
+  if [ $? -eq 0 ]; then
+    local apps=""
+    if grep -q "PHOTOSHOP" "$temp_file" 2>/dev/null; then
+      apps="$apps photoshop2021"
+    fi
+    if grep -q "ILLUSTRATOR" "$temp_file" 2>/dev/null; then
+      apps="$apps illustrator2021"
+    fi
+    
+    if [ -n "$apps" ]; then
+      $DIALOG_CMD --title "Exporting Bundles" \
+                  --infobox "Exporting Flatpak bundles...\nThis may take a few minutes." \
+                  6 40
+      
+      if $flatpak_script --bundle $apps >/tmp/flatpak_export.log 2>&1; then
+        $DIALOG_CMD --title "Export Complete" \
+                    --msgbox "Flatpak bundles exported successfully!\n\nCheck the flatpak folder for .flatpak files.\n\nLogs saved to: /tmp/flatpak_export.log" \
+                    10 50
+      else
+        $DIALOG_CMD --title "Export Failed" \
+                    --msgbox "Bundle export failed.\n\nCheck the logs at: /tmp/flatpak_export.log" \
+                    8 50
+      fi
+    else
+      $DIALOG_CMD --title "No Selection" \
+                  --msgbox "No applications selected for export." \
+                  6 30
+    fi
+  fi
+  
+  rm -f "$temp_file"
+}
+
 # Show utilities menu
 show_utilities_menu() {
   local choice
@@ -350,6 +569,25 @@ show_system_info() {
     echo "Memory: $(free -h | grep '^Mem:' | awk '{print $2}')"
     echo "Disk Space: $(df -h / | tail -1 | awk '{print $4}') available"
     echo ""
+    echo "Flatpak Status:"
+    if command -v flatpak >/dev/null 2>&1; then
+      echo "Flatpak: Installed ($(flatpak --version | head -1))"
+      if command -v flatpak-builder >/dev/null 2>&1; then
+        echo "Flatpak Builder: Available ($(flatpak-builder --version | head -1))"
+      else
+        echo "Flatpak Builder: Not installed"
+      fi
+      if flatpak remotes | grep -q flathub; then
+        echo "Flathub: Available"
+      else
+        echo "Flathub: Not configured"
+      fi
+      echo "Note: We'll build custom Wine into the Flatpak packages"
+    else
+      echo "Flatpak: Not installed"
+      echo "Flatpak Builder: Not available"
+    fi
+    echo ""
     echo "Base Directory:"
     if [ -f "$BASE_PATH_FILE" ]; then
       echo "Adobe Apps: $(cat "$BASE_PATH_FILE")"
@@ -373,6 +611,20 @@ show_system_info() {
     echo "Photoshop: $HOME/.cache/photoshop2021cr-installer"
     echo "Illustrator CC 17: $HOME/.cache/illustratorcc17-installer"
     echo "Illustrator 2021: $HOME/.cache/illustrator2021cr-installer"
+    echo ""
+    echo "Flatpak Build Directory:"
+    local script_dir="$(dirname "$SCRIPT_DIR")"
+    echo "Location: $script_dir/flatpak"
+    if [ -d "$script_dir/flatpak" ]; then
+      echo "Status: Available"
+      if [ -f "$script_dir/flatpak/build-flatpaks.sh" ]; then
+        echo "Build Script: Ready"
+      else
+        echo "Build Script: Missing"
+      fi
+    else
+      echo "Status: Not found"
+    fi
   } > "$temp_file"
   
   $DIALOG_CMD --title "System Information" \
@@ -384,18 +636,64 @@ show_system_info() {
 
 # Clear all caches
 clear_all_caches() {
+  local temp_file=$(mktemp)
+  
   $DIALOG_CMD --title "Clear Caches" \
-              --yesno "Remove all cached download files?\n\nThis will free up disk space but downloads will be needed again." \
-              8 50
+              --separate-output \
+              --checklist "Select caches to clear:" \
+              12 50 4 \
+              "PHOTOSHOP" "Photoshop 2021 installer cache" OFF \
+              "ILLUSTRATOR_CC17" "Illustrator CC 17 installer cache" OFF \
+              "ILLUSTRATOR_2021" "Illustrator 2021 installer cache" OFF \
+              "FLATPAK" "Flatpak build cache" OFF \
+              2> "$temp_file"
   
   if [ $? -eq 0 ]; then
-    rm -rf "$HOME/.cache/photoshop2021cr-installer"
-    rm -rf "$HOME/.cache/illustratorcc17-installer"
-    rm -rf "$HOME/.cache/illustrator2021cr-installer"
-    $DIALOG_CMD --title "Success" \
-                --msgbox "All caches cleared successfully." \
-                6 40
+    local cleared=false
+    
+    if grep -q "PHOTOSHOP" "$temp_file" 2>/dev/null; then
+      rm -rf "$HOME/.cache/photoshop2021cr-installer"
+      cleared=true
+    fi
+    
+    if grep -q "ILLUSTRATOR_CC17" "$temp_file" 2>/dev/null; then
+      rm -rf "$HOME/.cache/illustratorcc17-installer"
+      cleared=true
+    fi
+    
+    if grep -q "ILLUSTRATOR_2021" "$temp_file" 2>/dev/null; then
+      rm -rf "$HOME/.cache/illustrator2021cr-installer"
+      cleared=true
+    fi
+    
+    if grep -q "FLATPAK" "$temp_file" 2>/dev/null; then
+      local script_dir="$(dirname "$SCRIPT_DIR")"
+      if [ -d "$script_dir/flatpak/build-photoshop2021" ]; then
+        rm -rf "$script_dir/flatpak/build-photoshop2021"
+        cleared=true
+      fi
+      if [ -d "$script_dir/flatpak/build-illustrator2021" ]; then
+        rm -rf "$script_dir/flatpak/build-illustrator2021"
+        cleared=true
+      fi
+      if [ -d "$script_dir/flatpak/repo" ]; then
+        rm -rf "$script_dir/flatpak/repo"
+        cleared=true
+      fi
+    fi
+    
+    if [ "$cleared" = true ]; then
+      $DIALOG_CMD --title "Success" \
+                  --msgbox "Selected caches cleared successfully." \
+                  6 40
+    else
+      $DIALOG_CMD --title "No Selection" \
+                  --msgbox "No caches selected for clearing." \
+                  6 30
+    fi
   fi
+  
+  rm -f "$temp_file"
 }
 
 # Input path with tab completion

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Adobe Illustrator 2021
+GenericName=Vector Graphics Editor
+Comment=Professional vector graphics software
+Exec=launch-illustrator.sh
+Icon=com.adobe.illustrator2021
+Type=Application
+Categories=Graphics;VectorGraphics;
+MimeType=image/svg+xml;application/illustrator;application/x-illustrator;image/x-eps;
+StartupWMClass=Illustrator
+StartupNotify=true
+X-Flatpak=com.adobe.illustrator2021

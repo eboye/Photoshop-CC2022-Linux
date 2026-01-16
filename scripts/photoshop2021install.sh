@@ -337,6 +337,17 @@ EOF
 chmod +x "$LAUNCHER"
 log_success "Launcher created"
 
+# Copy icons to installation directory
+log_step "Copying icons..."
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+if [ -d "$PROJECT_ROOT/images/icons" ]; then
+  mkdir -p "$INSTALL_DIR/icons"
+  cp -r "$PROJECT_ROOT/images/icons" "$INSTALL_DIR/"
+  log_success "Icons copied to installation directory"
+else
+  log_warning "Icons folder not found, desktop entry may use generic icons"
+fi
+
 # Create desktop entry
 log_step "Creating desktop entry..."
 if ./create-desktop-entry.sh "$INSTALL_DIR" >/dev/null 2>&1; then
