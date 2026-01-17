@@ -90,7 +90,7 @@ modules:
     sources:
       - type: file
         url: file:///home/eboye/GitHub/LinuxPS/scripts/launch-illustrator.sh
-        sha256: e784e1a11b98e19a06442da6327431531c219bc8fa5f37d7d45a76e4cacf9c99
+        sha256: bb027a0eddb262a2bddf9e28d4f7d742d0df79a46e27eb277686a99bb3f2b553
 
   # Desktop Entry
   - name: desktop-entry

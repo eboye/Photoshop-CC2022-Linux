@@ -1,12 +1,12 @@
 #!/bin/bash
 # Simple launcher for Illustrator 2021 Flatpak
 
-# Use Wine 7.12 TKG for prefix setup (matches regular install)
-export PATH="/app/wine-712-staging-tkg/bin:$PATH"
-export LD_LIBRARY_PATH="/app/wine-712-staging-tkg/lib:/app/wine-712-staging-tkg/lib64:${LD_LIBRARY_PATH}"
+# Use wine-illustrator-custom for everything (matches regular install exactly)
+export PATH="/app/wine-illustrator/bin:$PATH"
+export LD_LIBRARY_PATH="/app/wine-illustrator/lib:/app/wine-illustrator/lib64:${LD_LIBRARY_PATH}"
 export WINEPREFIX="/var/data/Adobe-Illustrator"
-export WINELOADER="/app/wine-712-staging-tkg/bin/wine"
-export WINEDLLPATH="/app/wine-712-staging-tkg/lib/wine:/app/wine-712-staging-tkg/lib64/wine"
+export WINELOADER="/app/wine-illustrator/bin/wine"
+export WINEDLLPATH="/app/wine-illustrator/lib/wine:/app/wine-illustrator/lib64/wine"
 export WINEDEBUG=-all
 export WINEDLLOVERRIDES="winemenubuilder.exe=d"
 
@@ -22,36 +22,36 @@ export W_OPT_UNATTENDED=1
 if [ ! -d "/var/data/Adobe-Illustrator/dosdevices" ]; then
     echo "Initializing Wine prefix..."
     # Kill any existing wineserver
-    "/app/wine-712-staging-tkg/bin/wineserver" -k 2>/dev/null || true
+    "/app/wine-illustrator/bin/wineserver" -k 2>/dev/null || true
     sleep 2
     
     # Create wine prefix silently
-    "/app/wine-712-staging-tkg/bin/wineboot" -u 2>/dev/null || true
+    "/app/wine-illustrator/bin/wineboot" -u 2>/dev/null || true
     
     # Set Windows 10 mode
     echo "Setting Windows 10 mode..."
-    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-712-staging-tkg/bin/wine" reg add "HKCU\\Software\\Wine" /v Version /d "win10" /f 2>/dev/null || true
+    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-illustrator/bin/wine" reg add "HKCU\\Software\\Wine" /v Version /d "win10" /f 2>/dev/null || true
     
     # Install Wine components (fonts, libraries)
     echo "Installing Wine components..."
-    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-712-staging-tkg/bin/wine" "/app/bin/winetricks" -q fontsmooth=rgb gdiplus msxml3 msxml6 atmlib corefonts 2>/dev/null || true
+    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-illustrator/bin/wine" "/app/bin/winetricks" -q fontsmooth=rgb gdiplus msxml3 msxml6 atmlib corefonts 2>/dev/null || true
     
     # Install VC++ redistributables
     echo "Installing VC++ redistributables..."
     for version in 2010 2012 2013; do
         echo "Installing VC++ $version..."
-        WINEPREFIX="/var/data/Adobe-Illustrator" timeout 30 "/app/wine-712-staging-tkg/bin/wine" "/app/bin/winetricks" -q vcrun$version 2>/dev/null || true
+        WINEPREFIX="/var/data/Adobe-Illustrator" timeout 30 "/app/wine-illustrator/bin/wine" "/app/bin/winetricks" -q vcrun$version 2>/dev/null || true
     done
     
-    # Try 2015 and 2019 with shorter timeout
+    # Try 2015 and 2019 with shorter timeout and verbose output
     for version in 2015 2019; do
         echo "Installing VC++ $version..."
-        WINEPREFIX="/var/data/Adobe-Illustrator" timeout 20 "/app/wine-712-staging-tkg/bin/wine" "/app/bin/winetricks" -q vcrun$version 2>/dev/null || true
+        WINEPREFIX="/var/data/Adobe-Illustrator" timeout 20 "/app/wine-illustrator/bin/wine" "/app/bin/winetricks" -q vcrun$version || echo "VC++ $version installation failed or incomplete"
     done
     
     # Auto-install Mono silently
     echo "Installing Mono (silent)..."
-    "/app/wine-712-staging-tkg/bin/wine" msiexec /i "/app/wine-712-staging-tkg/share/wine/mono/wine-mono-6.4.0.msi" /quiet 2>/dev/null || true
+    "/app/wine-illustrator/bin/wine" msiexec /i "/app/wine-illustrator/share/wine/mono/wine-mono-6.4.0.msi" /quiet 2>/dev/null || true
     
     # Apply Adobe CSXS registry fixes
     echo "Applying Adobe compatibility fixes..."
@@ -119,7 +119,7 @@ REGEDIT4
 "PlayerDebugMode"=dword:00000001
 EOF
     
-    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-712-staging-tkg/bin/wine" regedit /S /tmp/adobe_csxs_fix.reg 2>/dev/null || true
+    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-illustrator/bin/wine" regedit /S /tmp/adobe_csxs_fix.reg 2>/dev/null || true
     rm -f /tmp/adobe_csxs_fix.reg
     
     # Apply Windows 10 dark theme
@@ -136,7 +136,7 @@ Windows Registry Editor Version 5.00
 "WindowText"="0 0 0"
 EOF
     
-    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-712-staging-tkg/bin/wine" regedit /S /tmp/dark-theme.reg 2>/dev/null || true
+    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-illustrator/bin/wine" regedit /S /tmp/dark-theme.reg 2>/dev/null || true
     rm -f /tmp/dark-theme.reg
     
     # Configure font smoothing settings
@@ -151,7 +151,7 @@ Windows Registry Editor Version 5.00
 "FontSmoothingOrientation"=dword:00000001
 EOF
     
-    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-712-staging-tkg/bin/wine" regedit /S /tmp/font-settings.reg 2>/dev/null || true
+    WINEPREFIX="/var/data/Adobe-Illustrator" "/app/wine-illustrator/bin/wine" regedit /S /tmp/font-settings.reg 2>/dev/null || true
     rm -f /tmp/font-settings.reg
     
     echo "Adobe compatibility fixes and appearance settings applied"
@@ -170,7 +170,7 @@ fi
 ILLUSTRATOR_DIR=$(dirname "$ILLUSTRATOR_EXE")
 echo "Starting Illustrator from: $ILLUSTRATOR_EXE"
 
-# Switch to wine-illustrator-custom for running Illustrator (matches regular install)
+# Use wine-illustrator-custom for running Illustrator (matches regular install exactly)
 export PATH="/app/wine-illustrator/bin:$PATH"
 export LD_LIBRARY_PATH="/app/wine-illustrator/lib:/app/wine-illustrator/lib64:${LD_LIBRARY_PATH}"
 export WINELOADER="/app/wine-illustrator/bin/wine"

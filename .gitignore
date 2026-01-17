@@ -4,6 +4,10 @@
 /wine-illustrator-custom.tar.xz
 .idea
 
+# Microsoft Redistributables (downloaded from official Microsoft sources)
+/redistributables/
+*.dll
+
 # Backup files
 photoshop-2021-backup-*.tar.xz
 photoshop-2021-backup-*.tar
