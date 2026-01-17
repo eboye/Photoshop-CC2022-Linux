@@ -16,6 +16,11 @@ else
   exit 1
 fi
 
+# Define log_step function (not in common.sh)
+log_step() {
+  echo -e "${BLUE}[STEP]${NC} ${BOLD}$1${NC}"
+}
+
 # Parse arguments
 INSTALL_DIR=""
 DESKTOP_NAME=""
@@ -131,7 +136,7 @@ mkdir -p "$DESKTOP_FILE_DIR"
 # Handle icon
 if [ -z "$ICON_PATH" ]; then
   # Copy icon from project icons folder
-  PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+  PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
   SOURCE_ICON="$PROJECT_ROOT/images/icons/photoshop.png"
   ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
   mkdir -p "$ICON_DIR"

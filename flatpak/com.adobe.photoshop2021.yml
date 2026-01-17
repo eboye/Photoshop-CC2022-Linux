@@ -82,7 +82,11 @@ modules:
     buildsystem: simple
     build-commands:
       - install -Dm644 com.adobe.photoshop2021.desktop /app/share/applications/com.adobe.photoshop2021.desktop
+      - install -Dm644 photoshop.png /app/share/icons/hicolor/256x256/apps/com.adobe.photoshop2021.png
     sources:
       - type: file
         url: file:///home/eboye/GitHub/LinuxPS/flatpak/com.adobe.photoshop2021.desktop
         sha256: eb0431af8a6d3c795757ffdafbc2ad40fa7104560c28b0621fdd751cd488368a
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/images/icons/photoshop.png
+        sha256: cfa7a9bde49bcf9307d3a9a5f79030138d73ecce892b26811d2825df626880f2

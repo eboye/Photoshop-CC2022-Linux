@@ -137,7 +137,7 @@ ICON_FILE="$HOME/.local/share/icons/illustrator2021.png"
 mkdir -p ~/.local/share/icons/
 
 # Copy icon from project icons folder
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SOURCE_ICON="$PROJECT_ROOT/images/icons/illustrator.png"
 
 # Use project icon if exists, otherwise use generic icon

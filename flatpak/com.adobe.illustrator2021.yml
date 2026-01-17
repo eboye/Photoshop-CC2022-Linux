@@ -104,4 +104,4 @@ modules:
         sha256: 1a686248191a6166268d1c545c940452fbed30a17727365018e3a308e3117cda
       - type: file
         url: file:///home/eboye/GitHub/LinuxPS/images/icons/illustrator.png
-        sha256: 694394dfd6cb6c8b77846e4c98b0910c2e948fbf433603ad0064882335b2ff64
+        sha256: e5f8800949052715092f9b18b8e628d2a687eca97bdd103da553d2c76ae01e4d
