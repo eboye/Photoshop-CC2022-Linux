@@ -36,51 +36,87 @@ INSTALL_DIR=""
 DRY_RUN=false
 KEEP_CACHE=false
 SKIP_VERIFY=false
+FORCE=false
+
+usage() {
+  cat <<EOF
+Usage: $0 [OPTIONS] /path/to/install/directory
+
+Options:
+  -v, --verbose      Show detailed output
+  -V, --version      Show version information
+  -n, --dry-run      Show what would be done without executing
+  -k, --keep-cache   Keep downloaded files in \$CACHE_DIR after install
+  -s, --skip-verify  Skip checksum verification (not recommended)
+  -f, --force        Overwrite an existing Wine prefix without prompting
+  -h, --help         Show this help
+EOF
+}
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -v|--verbose)
-      VERBOSE=true
-      shift
-      ;;
+    -v|--verbose)     VERBOSE=true; shift ;;
     -V|--version)
       echo "Illustrator CC 17 Linux Installer (CR) v$SCRIPT_VERSION (Wine $WINE_VERSION)"
-      exit 0
-      ;;
-    -n|--dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    -k|--keep-cache)
-      KEEP_CACHE=true
-      shift
-      ;;
-    -s|--skip-verify)
-      SKIP_VERIFY=true
-      shift
-      ;;
+      exit 0 ;;
+    -n|--dry-run)     DRY_RUN=true; shift ;;
+    -k|--keep-cache)  KEEP_CACHE=true; shift ;;
+    -s|--skip-verify) SKIP_VERIFY=true; shift ;;
+    -f|--force)       FORCE=true; shift ;;
+    -h|--help)        usage; exit 0 ;;
+    --)               shift; break ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1 ;;
     *)
+      if [ -n "$INSTALL_DIR" ]; then
+        echo "Error: multiple install directories given ('$INSTALL_DIR' and '$1')" >&2
+        exit 1
+      fi
       INSTALL_DIR="$1"
-      shift
-      ;;
+      shift ;;
   esac
 done
 
+if [ -z "$INSTALL_DIR" ] && [ $# -gt 0 ]; then
+  INSTALL_DIR="$1"; shift
+  if [ $# -gt 0 ]; then
+    echo "Error: extra arguments after install dir: $*" >&2
+    exit 1
+  fi
+fi
+
 if [ -z "$INSTALL_DIR" ]; then
-  echo "Usage: $0 [OPTIONS] /path/to/install/directory"
-  echo ""
-  echo "Options:"
-  echo "  -v, --verbose      Show detailed output"
-  echo "  -V, --version      Show version information"
-  echo "  -n, --dry-run      Show what would be done without executing"
-  echo "  -k, --keep-cache   Keep downloaded files in cache"
-  echo "  -s, --skip-verify  Skip checksum verification (not recommended)"
+  usage
   exit 1
 fi
 
 INSTALL_DIR="$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd)"
 WINE_DIR="$INSTALL_DIR/wine-9.0"
 WINEPREFIX="$INSTALL_DIR/Adobe-Illustrator"
+
+if [ "$DRY_RUN" = "true" ]; then
+  cat <<EOF
+[dry-run] Would install Illustrator CC 17 with these settings:
+  INSTALL_DIR     = $INSTALL_DIR
+  WINE_DIR        = $WINE_DIR
+  WINEPREFIX      = $WINEPREFIX
+  WINE_URL        = $WINE_URL
+  CACHE_DIR       = $CACHE_DIR
+  SKIP_VERIFY     = $SKIP_VERIFY
+  FORCE           = $FORCE
+  KEEP_CACHE      = $KEEP_CACHE
+EOF
+  exit 0
+fi
+
+# Refuse to clobber an existing Wine prefix without --force
+if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
+  log_error "Wine prefix already exists: $WINEPREFIX"
+  log_info "Re-run with --force to overwrite, or pick a different install directory."
+  exit 1
+fi
 
 # Progress tracking
 TOTAL_STEPS=15
@@ -142,12 +178,18 @@ log_success "Wine $WINE_VERSION verified"
 # Download winetricks
 log_step "Setting up winetricks..."
 cd "$INSTALL_DIR"
-if [ ! -f "winetricks" ]; then
+# Re-fetch if local copy is missing, empty, or not executable
+if [ ! -s "winetricks" ] || ! [ -x "winetricks" ]; then
+  rm -f winetricks
   if ! download_file "$WINETRICKS_URL" "winetricks" "$WINETRICKS_SHA256" "winetricks" "$SKIP_VERIFY"; then
     log_error "Failed to download winetricks"
     exit 1
   fi
   chmod +x winetricks
+  if [ ! -s "winetricks" ]; then
+    log_error "Downloaded winetricks is empty"
+    exit 1
+  fi
   log_success "Winetricks downloaded"
 else
   log_info "Using existing winetricks"
@@ -165,7 +207,10 @@ wineserver -k 2>/dev/null || true
 sleep 2
 
 if [ "$VERBOSE" = true ]; then
-  wineboot
+  if ! wineboot; then
+    log_error "wineboot failed"
+    exit 1
+  fi
 else
   wineboot >/dev/null 2>&1 &
   BOOT_PID=$!
@@ -176,6 +221,11 @@ else
       sleep 0.1
     done
   done
+  if ! wait "$BOOT_PID"; then
+    printf "\r    %s✗%s Initialization failed\n" "${RED}" "${NC}"
+    log_error "wineboot exited with non-zero status"
+    exit 1
+  fi
   printf "\r    %s✓%s Initialized      \n" "${GREEN}" "${NC}"
 fi
 
@@ -334,25 +384,26 @@ else
 fi
 
 log_step "Creating launcher..."
-LAUNCHER="$INSTALL_DIR/launch-illustrator.sh"
-cat > "$LAUNCHER" << EOF
-#!/usr/bin/env bash
-export PATH="$WINE_DIR/bin:\$PATH"
-export LD_LIBRARY_PATH="$WINE_DIR/lib:$WINE_DIR/lib64:\${LD_LIBRARY_PATH}"
-export WINEPREFIX="$WINEPREFIX"
-export WINELOADER="$WINE_DIR/bin/wine"
-export WINEDLLPATH="$WINE_DIR/lib/wine:$WINE_DIR/lib64/wine"
-export WINEDEBUG=-all
-export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+WINE_ENV_FILE="$INSTALL_DIR/wine-env.sh"
+write_wine_env_file "$WINE_ENV_FILE" "$WINE_DIR" "$WINEPREFIX"
 
-cd "\$WINEPREFIX/drive_c/Program Files/Adobe/IllustratorCC17"
-"$WINE_DIR/bin/wine" IllustratorCC64.exe "\$@"
+LAUNCHER="$INSTALL_DIR/launch-illustrator.sh"
+cat > "$LAUNCHER" << 'EOF'
+#!/usr/bin/env bash
+# Single source of truth for wine env lives in wine-env.sh
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+# shellcheck disable=SC1091
+source "$HERE/wine-env.sh"
+
+cd "$WINEPREFIX/drive_c/Program Files/Adobe/IllustratorCC17"
+exec "$WINELOADER" IllustratorCC64.exe "$@"
 EOF
 
 chmod +x "$LAUNCHER"
 log_success "Launcher created"
 
 log_step "Creating desktop entry..."
+mkdir -p "$HOME/.local/share/applications"
 DESKTOP_ENTRY="$HOME/.local/share/applications/illustratorCC.desktop"
 cat > "$DESKTOP_ENTRY" << EOF
 [Desktop Entry]
@@ -375,6 +426,11 @@ fi
 # Final cleanup
 wineserver -k 2>/dev/null || true
 sleep 2
+
+if [ "$KEEP_CACHE" != "true" ] && [ -d "$CACHE_DIR" ]; then
+  log_info "Removing download cache at $CACHE_DIR (use --keep-cache to retain)"
+  rm -rf "$CACHE_DIR"
+fi
 
 echo ""
 echo -e "${BOLD}${GREEN}Installation completed successfully!${NC}"

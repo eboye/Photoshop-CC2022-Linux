@@ -38,52 +38,58 @@ DRY_RUN=false
 KEEP_CACHE=false
 SKIP_VERIFY=false
 CREATE_DESKTOP=true
+FORCE=false
+
+usage() {
+  cat <<EOF
+Usage: $0 [OPTIONS] /path/to/install/directory
+
+Options:
+  -v, --verbose      Show detailed output
+  -V, --version      Show version information
+  -n, --dry-run      Show what would be done without executing
+  -k, --keep-cache   Keep downloaded files in \$CACHE_DIR after install
+  -s, --skip-verify  Skip checksum verification (not recommended)
+  -f, --force        Overwrite an existing Wine prefix without prompting
+  --no-desktop       Skip desktop entry creation
+  -h, --help         Show this help message
+EOF
+}
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -v|--verbose)
-      VERBOSE=true
-      shift
-      ;;
+    -v|--verbose)     VERBOSE=true; shift ;;
     -V|--version)
       echo "Illustrator 2021 Linux Installer v$SCRIPT_VERSION"
-      exit 0
-      ;;
-    -n|--dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    -k|--keep-cache)
-      KEEP_CACHE=true
-      shift
-      ;;
-    -s|--skip-verify)
-      SKIP_VERIFY=true
-      shift
-      ;;
-    --no-desktop)
-      CREATE_DESKTOP=false
-      shift
-      ;;
-    -h|--help)
-      echo "Usage: $0 [OPTIONS] /path/to/install/directory"
-      echo ""
-      echo "Options:"
-      echo "  -v, --verbose      Show detailed output"
-      echo "  -V, --version      Show version information"
-      echo "  -n, --dry-run      Show what would be done without executing"
-      echo "  -k, --keep-cache   Keep downloaded files in cache"
-      echo "  -s, --skip-verify  Skip checksum verification"
-      echo "  --no-desktop      Skip desktop entry creation"
-      echo "  -h, --help         Show this help message"
-      exit 0
-      ;;
+      exit 0 ;;
+    -n|--dry-run)     DRY_RUN=true; shift ;;
+    -k|--keep-cache)  KEEP_CACHE=true; shift ;;
+    -s|--skip-verify) SKIP_VERIFY=true; shift ;;
+    -f|--force)       FORCE=true; shift ;;
+    --no-desktop)     CREATE_DESKTOP=false; shift ;;
+    -h|--help)        usage; exit 0 ;;
+    --)               shift; break ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1 ;;
     *)
+      if [ -n "$INSTALL_DIR" ]; then
+        echo "Error: multiple install directories given ('$INSTALL_DIR' and '$1')" >&2
+        exit 1
+      fi
       INSTALL_DIR="$1"
-      shift
-      ;;
+      shift ;;
   esac
 done
+
+if [ -z "$INSTALL_DIR" ] && [ $# -gt 0 ]; then
+  INSTALL_DIR="$1"; shift
+  if [ $# -gt 0 ]; then
+    echo "Error: extra arguments after install dir: $*" >&2
+    exit 1
+  fi
+fi
 
 # Default installation directory
 if [ -z "$INSTALL_DIR" ]; then
@@ -96,7 +102,32 @@ fi
 # Normalize installation directory
 INSTALL_DIR="$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd)"
 WINE_DIR="$INSTALL_DIR/wine-7.12-staging-tkg"
+CUSTOM_WINE_DIR="$INSTALL_DIR/wine-illustrator-custom"
 WINEPREFIX="$INSTALL_DIR/Adobe-Illustrator-2021"
+
+if [ "$DRY_RUN" = "true" ]; then
+  cat <<EOF
+[dry-run] Would install Illustrator 2021 with these settings:
+  INSTALL_DIR     = $INSTALL_DIR
+  WINE_DIR        = $WINE_DIR
+  CUSTOM_WINE_DIR = $CUSTOM_WINE_DIR
+  WINEPREFIX      = $WINEPREFIX
+  WINE_URL        = $WINE_URL
+  CACHE_DIR       = $CACHE_DIR
+  SKIP_VERIFY     = $SKIP_VERIFY
+  CREATE_DESKTOP  = $CREATE_DESKTOP
+  FORCE           = $FORCE
+  KEEP_CACHE      = $KEEP_CACHE
+EOF
+  exit 0
+fi
+
+# Refuse to clobber an existing Wine prefix without --force
+if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
+  log_error "Wine prefix already exists: $WINEPREFIX"
+  log_info "Re-run with --force to overwrite, or pick a different install directory."
+  exit 1
+fi
 
 # Progress tracking
 TOTAL_STEPS=18
@@ -206,12 +237,18 @@ log_success "Custom wine-illustrator verified"
 # Download winetricks
 log_step "Setting up winetricks..."
 cd "$INSTALL_DIR"
-if [ ! -f "winetricks" ]; then
+# Re-fetch if local copy is missing, empty, or not executable
+if [ ! -s "winetricks" ] || ! [ -x "winetricks" ]; then
+  rm -f winetricks
   if ! download_file "$WINETRICKS_URL" "winetricks" "$WINETRICKS_SHA256" "winetricks" "$SKIP_VERIFY"; then
     log_error "Failed to download winetricks"
     exit 1
   fi
   chmod +x winetricks
+  if [ ! -s "winetricks" ]; then
+    log_error "Downloaded winetricks is empty"
+    exit 1
+  fi
   log_success "Winetricks downloaded"
 else
   log_info "Using existing winetricks"
@@ -229,17 +266,25 @@ rm -rf "$WINEPREFIX"
 sleep 2
 
 if [ "$VERBOSE" = true ]; then
-  "$INSTALL_DIR/wine-illustrator-custom/bin/wineboot"
+  if ! "$CUSTOM_WINE_DIR/bin/wineboot"; then
+    log_error "wineboot failed"
+    exit 1
+  fi
 else
-  "$INSTALL_DIR/wine-illustrator-custom/bin/wineboot" >/dev/null 2>&1 &
+  "$CUSTOM_WINE_DIR/bin/wineboot" >/dev/null 2>&1 &
   BOOT_PID=$!
   # Show spinner while wineboot runs
   while kill -0 $BOOT_PID 2>/dev/null; do
-    for s in / - \ \|; do
+    for s in / - \\ \|; do
       printf "\r    %s%s%s Initializing..." "${YELLOW}" "${s}" "${NC}"
       sleep 0.1
     done
   done
+  if ! wait "$BOOT_PID"; then
+    printf "\r    %s✗%s Initialization failed\n" "${RED}" "${NC}"
+    log_error "wineboot exited with non-zero status"
+    exit 1
+  fi
   printf "\r    %s✓%s Initialized      \n" "${GREEN}" "${NC}"
 fi
 
@@ -386,45 +431,29 @@ fi
 log_success "Found: $(basename "$ILLUSTRACTOR_ARCHIVE")"
 
 log_step "Extracting Illustrator 2021..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would extract Illustrator from $ILLUSTRACTOR_ARCHIVE"
-else
-  log_info "Extracting archive... (this may take a minute)"
-  tar -xf "$ILLUSTRACTOR_ARCHIVE" -C /tmp/
-  log_success "Illustrator extracted"
-fi
+log_info "Extracting archive... (this may take a minute)"
+tar -xf "$ILLUSTRACTOR_ARCHIVE" -C /tmp/
+log_success "Illustrator extracted"
 
 # Step 6: Use Wine 7.12 TKG for Illustrator compatibility
 log_step "Using Wine 7.12 TKG for Illustrator compatibility..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would use Wine 7.12 TKG for Illustrator"
-else
-  log_info "Using Wine 7.12 TKG for optimal Illustrator compatibility (same as old wine-illustrator-custom)"
-  log_success "Wine 7.12 TKG configured for Illustrator"
-fi
+log_info "Using Wine 7.12 TKG for optimal Illustrator compatibility (same as old wine-illustrator-custom)"
+log_success "Wine 7.12 TKG configured for Illustrator"
 
 # Step 7: Initialize Wine prefix with Wine 7.12 TKG
 log_step "Initializing Wine prefix with Wine 7.12 TKG..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would initialize Wine prefix with Wine 7.12 TKG"
-else
-  log_info "Initializing Wine with Wine 7.12 TKG..."
-  "$WINE_DIR/bin/wineboot" >/dev/null 2>&1
-  log_success "Wine prefix initialized with Wine 7.12 TKG"
-fi
+log_info "Initializing Wine with Wine 7.12 TKG..."
+"$WINE_DIR/bin/wineboot" >/dev/null 2>&1
+log_success "Wine prefix initialized with Wine 7.12 TKG"
 
 # Step 8: Verify Wine 7.12 TKG installation
 log_step "Verifying Wine 7.12 TKG installation..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would verify Wine 7.12 TKG installation"
+if [ -f "$WINE_DIR/bin/wine64" ]; then
+  log_success "Wine 7.12 TKG verified and working"
+  log_info "Using Wine 7.12 TKG for optimal Illustrator 2021 compatibility"
 else
-  if [ -f "$WINE_DIR/bin/wine64" ]; then
-    log_success "Wine 7.12 TKG verified and working"
-    log_info "Using Wine 7.12 TKG for optimal Illustrator 2021 compatibility"
-  else
-    log_error "Wine 7.12 TKG binary not found"
-    exit 1
-  fi
+  log_error "Wine 7.12 TKG binary not found"
+  exit 1
 fi
 
 # Step 9: Install Wine components
@@ -441,68 +470,57 @@ fi
 
 # Step 10: Install Illustrator
 log_step "Installing Illustrator..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would install Illustrator to Wine prefix"
-else
-  mkdir -p "$WINEPREFIX/drive_c/Program Files/"
-  cp -r "/tmp/Adobe Illustrator 2021" "$WINEPREFIX/drive_c/Program Files/"
-  rm -rf "/tmp/Adobe Illustrator 2021"
-  
-  log_success "Illustrator installed"
-fi
+mkdir -p "$WINEPREFIX/drive_c/Program Files/"
+cp -r "/tmp/Adobe Illustrator 2021" "$WINEPREFIX/drive_c/Program Files/"
+rm -rf "/tmp/Adobe Illustrator 2021"
+log_success "Illustrator installed"
 
 # Step 12: Install VC++ redistributables using simpler approach
 log_step "Installing VC++ redistributables..."
 log_info "Installing Visual C++ runtimes (2010, 2012, 2013, 2015, 2019, 2022)..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would install VC++ redistributables"
-else
-  cd "$INSTALL_DIR"
-  
-  # Simple approach: install only the essential ones that Illustrator needs
-  log_info "Installing essential VC++ redistributables..."
-  
-  # Install 2010, 2012, 2013 first (most important for Illustrator)
-  for version in 2010 2012 2013; do
-    log_info "Installing VC++ $version..."
-    env WINEPREFIX="$WINEPREFIX" PATH="$INSTALL_DIR/wine-illustrator-custom/bin:$PATH" timeout 30 "$INSTALL_DIR/wine-illustrator-custom/bin/wine" "$INSTALL_DIR/winetricks" -q vcrun$version >/dev/null 2>&1 || log_warning "VC++ $version installation failed"
-  done
-  
-  # Try 2015 and 2019 with shorter timeout
-  for version in 2015 2019; do
-    log_info "Installing VC++ $version..."
-    env WINEPREFIX="$WINEPREFIX" PATH="$INSTALL_DIR/wine-illustrator-custom/bin:$PATH" timeout 20 "$INSTALL_DIR/wine-illustrator-custom/bin/wine" "$INSTALL_DIR/winetricks" -q vcrun$version >/dev/null 2>&1 || log_warning "VC++ $version installation failed"
-  done
-  
-  # Fix missing MSVCP140_CODECVT_IDS.dll that redistributables sometimes miss
-  log_info "Fixing missing DLL dependencies..."
-  if [ ! -f "$WINEPREFIX/drive_c/windows/system32/msvcp140_codecvt_ids.dll" ]; then
-    if [ -f "/usr/lib/wine/x86_64-windows/msvcp140_codecvt_ids.dll" ]; then
-      cp /usr/lib/wine/x86_64-windows/msvcp140_codecvt_ids.dll "$WINEPREFIX/drive_c/windows/system32/"
-      log_info "Added missing MSVCP140_CODECVT_IDS.dll"
-    else
-      log_warning "Could not find MSVCP140_CODECVT_IDS.dll in system Wine"
-    fi
+cd "$INSTALL_DIR"
+
+# Simple approach: install only the essential ones that Illustrator needs
+log_info "Installing essential VC++ redistributables..."
+
+# Install 2010, 2012, 2013 first (most important for Illustrator)
+for version in 2010 2012 2013; do
+  log_info "Installing VC++ $version..."
+  env WINEPREFIX="$WINEPREFIX" PATH="$CUSTOM_WINE_DIR/bin:$PATH" timeout 30 "$CUSTOM_WINE_DIR/bin/wine" "$INSTALL_DIR/winetricks" -q vcrun$version >/dev/null 2>&1 || log_warning "VC++ $version installation failed"
+done
+
+# Try 2015 and 2019 with shorter timeout
+for version in 2015 2019; do
+  log_info "Installing VC++ $version..."
+  env WINEPREFIX="$WINEPREFIX" PATH="$CUSTOM_WINE_DIR/bin:$PATH" timeout 20 "$CUSTOM_WINE_DIR/bin/wine" "$INSTALL_DIR/winetricks" -q vcrun$version >/dev/null 2>&1 || log_warning "VC++ $version installation failed"
+done
+
+# Fix missing MSVCP140_CODECVT_IDS.dll that redistributables sometimes miss
+log_info "Fixing missing DLL dependencies..."
+if [ ! -f "$WINEPREFIX/drive_c/windows/system32/msvcp140_codecvt_ids.dll" ]; then
+  if [ -f "/usr/lib/wine/x86_64-windows/msvcp140_codecvt_ids.dll" ]; then
+    cp /usr/lib/wine/x86_64-windows/msvcp140_codecvt_ids.dll "$WINEPREFIX/drive_c/windows/system32/"
+    log_info "Added missing MSVCP140_CODECVT_IDS.dll"
+  else
+    log_warning "Could not find MSVCP140_CODECVT_IDS.dll in system Wine"
   fi
-  
-  # Also copy other common missing DLLs
-  for dll in msvcp140.dll msvcr140.dll vcruntime140.dll; do
-    if [ ! -f "$WINEPREFIX/drive_c/windows/system32/$dll" ] && [ -f "/usr/lib/wine/x86_64-windows/$dll" ]; then
-      cp "/usr/lib/wine/x86_64-windows/$dll" "$WINEPREFIX/drive_c/windows/system32/"
-      log_info "Added missing $dll"
-    fi
-  done
-  
-  log_success "VC++ redistributables installed (2010, 2012, 2013, 2015, 2019)"
 fi
+
+# Also copy other common missing DLLs
+for dll in msvcp140.dll msvcr140.dll vcruntime140.dll; do
+  if [ ! -f "$WINEPREFIX/drive_c/windows/system32/$dll" ] && [ -f "/usr/lib/wine/x86_64-windows/$dll" ]; then
+    cp "/usr/lib/wine/x86_64-windows/$dll" "$WINEPREFIX/drive_c/windows/system32/"
+    log_info "Added missing $dll"
+  fi
+done
+
+log_success "VC++ redistributables installed (2010, 2012, 2013, 2015, 2019)"
 
 # Step 12.5: Apply Adobe CSXS registry fixes to bypass Adobe services
 log_step "Applying Adobe compatibility fixes..."
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would apply Adobe CSXS registry fixes"
-else
-  # Create Adobe CSXS registry fix to bypass Adobe service requirements
-  cat > /tmp/adobe_csxs_fix.reg << 'EOF'
+ADOBE_CSXS_REG="$(mktemp --suffix=.reg)"
+# Create Adobe CSXS registry fix to bypass Adobe service requirements
+cat > "$ADOBE_CSXS_REG" << 'EOF'
 REGEDIT4
 
 [HKEY_CURRENT_USER\Software\Adobe\CSXS.11]
@@ -625,72 +643,59 @@ REGEDIT4
 [HKEY_LOCAL_MACHINE\Software\Adobe\CSXS.30]
 "PlayerDebugMode"=dword:00000001
 EOF
-  
-  # Apply the registry fix
-  env WINEPREFIX="$WINEPREFIX" PATH="$INSTALL_DIR/wine-illustrator-custom/bin:$PATH" "$INSTALL_DIR/wine-illustrator-custom/bin/wine" regedit /S /tmp/adobe_csxs_fix.reg || log_warning "Failed to apply Adobe CSXS registry fixes"
-  
-  # Clean up
-  rm -f /tmp/adobe_csxs_fix.reg
-  
-  log_success "Adobe compatibility fixes applied"
-fi
+
+# Apply the registry fix
+env WINEPREFIX="$WINEPREFIX" PATH="$CUSTOM_WINE_DIR/bin:$PATH" "$CUSTOM_WINE_DIR/bin/wine" regedit /S "$ADOBE_CSXS_REG" || log_warning "Failed to apply Adobe CSXS registry fixes"
+
+rm -f "$ADOBE_CSXS_REG"
+
+log_success "Adobe compatibility fixes applied"
 
 # Step 13: Create launcher script
 log_step "Creating launcher script..."
+WINE_ENV_FILE="$INSTALL_DIR/wine-env.sh"
+write_wine_env_file "$WINE_ENV_FILE" "$CUSTOM_WINE_DIR" "$WINEPREFIX"
+
 LAUNCHER="$INSTALL_DIR/launch-illustrator.sh"
-if [ "$DRY_RUN" = true ]; then
-  log_info "DRY RUN: Would create launcher script"
-else
-  cat > "$LAUNCHER" << EOF
+cat > "$LAUNCHER" << 'EOF'
 #!/usr/bin/env bash
-
-# Set WINEPREFIX
-export WINEPREFIX="$WINEPREFIX"
-
-# Use working wine-illustrator-custom
-export PATH="$INSTALL_DIR/wine-illustrator-custom/bin:\$PATH"
-export LD_LIBRARY_PATH="$INSTALL_DIR/wine-illustrator-custom/lib:$INSTALL_DIR/wine-illustrator-custom/lib64:\${LD_LIBRARY_PATH}"
-export WINELOADER="$INSTALL_DIR/wine-illustrator-custom/bin/wine"
-export WINEDLLPATH="$INSTALL_DIR/wine-illustrator-custom/lib/wine:$INSTALL_DIR/wine-illustrator-custom/lib64/wine"
-export WINEDEBUG=-all
-export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+# Single source of truth for wine env lives in wine-env.sh
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+# shellcheck disable=SC1091
+source "$HERE/wine-env.sh"
 
 # DXVK environment variables from oldinstall
 export DXVK_LOG_PATH="$WINEPREFIX"
 export DXVK_STATE_CACHE_PATH="$WINEPREFIX"
 
-cd "\$WINEPREFIX/drive_c/Program Files/Adobe Illustrator 2021/Support Files/Contents/Windows"
-"$INSTALL_DIR/wine-illustrator-custom/bin/wine64" Illustrator.exe "\$@"
+cd "$WINEPREFIX/drive_c/Program Files/Adobe Illustrator 2021/Support Files/Contents/Windows"
+exec "$(dirname "$WINELOADER")/wine64" Illustrator.exe "$@"
 EOF
-  
-  chmod +x "$LAUNCHER"
-  log_success "Launcher script created"
-fi
+
+chmod +x "$LAUNCHER"
+log_success "Launcher script created"
 
 # Copy icons to installation directory
 log_step "Copying icons..."
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 if [ -d "$PROJECT_ROOT/images/icons" ]; then
   mkdir -p "$INSTALL_DIR/icons"
   cp -r "$PROJECT_ROOT/images/icons" "$INSTALL_DIR/"
   log_success "Icons copied to installation directory"
 else
-  log_warning "Icons folder not found, desktop entry may use generic icons"
+  log_warning "Icons folder not found at $PROJECT_ROOT/images/icons, desktop entry may use generic icons"
 fi
 
 # Step 13: Create desktop entry (if requested)
 if [ "$CREATE_DESKTOP" = true ]; then
   log_step "Creating desktop entry..."
-  if [ "$DRY_RUN" = true ]; then
-    log_info "DRY RUN: Would create desktop entry"
+  # Use the desktop entry creation script which now handles icons properly
+  if "$SCRIPT_DIR/create-illustrator2021-desktop.sh" "$INSTALL_DIR" >/dev/null 2>&1; then
+    log_success "Desktop entry created"
   else
-    # Use the desktop entry creation script which now handles icons properly
-    if ./create-illustrator2021-desktop.sh "$INSTALL_DIR" >/dev/null 2>&1; then
-      log_success "Desktop entry created"
-    else
-      log_warning "Failed to create desktop entry, creating fallback..."
-      # Fallback desktop entry with generic icon
-      cat > ~/.local/share/applications/illustrator2021.desktop << EOF
+    log_warning "Failed to create desktop entry, creating fallback..."
+    mkdir -p ~/.local/share/applications
+    # Fallback desktop entry with generic icon
+    cat > ~/.local/share/applications/illustrator2021.desktop << EOF
 [Desktop Entry]
 Name=Adobe Illustrator 2021
 Exec=bash -c "$LAUNCHER %F"
@@ -700,15 +705,15 @@ Categories=Graphics;
 Icon=application-x-illustrator
 StartupWMClass=illustrator.exe
 EOF
-      log_success "Fallback desktop entry created"
-    fi
+    log_success "Fallback desktop entry created"
   fi
 else
   log_info "Desktop entry creation skipped"
 fi
 
 # Cleanup
-if [ "$KEEP_CACHE" != "true" ] && [ "$DRY_RUN" != "true" ]; then
+if [ "$KEEP_CACHE" != "true" ] && [ -d "$CACHE_DIR" ]; then
+  log_info "Removing download cache at $CACHE_DIR (use --keep-cache to retain)"
   rm -rf "$CACHE_DIR"
 fi
 

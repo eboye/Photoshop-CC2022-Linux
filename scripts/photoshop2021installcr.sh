@@ -36,56 +36,91 @@ DRY_RUN=false
 KEEP_CACHE=false
 SKIP_VERIFY=false
 SKIP_APPEARANCE=false
+FORCE=false
+
+usage() {
+  cat <<EOF
+Usage: $0 [OPTIONS] /path/to/install/directory
+
+Options:
+  -v, --verbose      Show detailed output
+  -V, --version      Show version information
+  -n, --dry-run      Show what would be done without executing
+  -k, --keep-cache   Keep downloaded files in \$CACHE_DIR after install
+  -s, --skip-verify  Skip checksum verification (not recommended)
+  -f, --force        Overwrite an existing Wine prefix without prompting
+  --skip-appearance  Skip appearance configuration
+  -h, --help         Show this help
+EOF
+}
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -v|--verbose)
-      VERBOSE=true
-      shift
-      ;;
+    -v|--verbose)      VERBOSE=true; shift ;;
     -V|--version)
       echo "Photoshop 2021 Linux Installer (CR) v$SCRIPT_VERSION (Wine $WINE_VERSION)"
-      exit 0
-      ;;
-    -n|--dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    -k|--keep-cache)
-      KEEP_CACHE=true
-      shift
-      ;;
-    -s|--skip-verify)
-      SKIP_VERIFY=true
-      shift
-      ;;
-    --skip-appearance)
-      SKIP_APPEARANCE=true
-      shift
-      ;;
+      exit 0 ;;
+    -n|--dry-run)      DRY_RUN=true; shift ;;
+    -k|--keep-cache)   KEEP_CACHE=true; shift ;;
+    -s|--skip-verify)  SKIP_VERIFY=true; shift ;;
+    -f|--force)        FORCE=true; shift ;;
+    --skip-appearance) SKIP_APPEARANCE=true; shift ;;
+    -h|--help)         usage; exit 0 ;;
+    --)                shift; break ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1 ;;
     *)
+      if [ -n "$INSTALL_DIR" ]; then
+        echo "Error: multiple install directories given ('$INSTALL_DIR' and '$1')" >&2
+        exit 1
+      fi
       INSTALL_DIR="$1"
-      shift
-      ;;
+      shift ;;
   esac
 done
 
+if [ -z "$INSTALL_DIR" ] && [ $# -gt 0 ]; then
+  INSTALL_DIR="$1"; shift
+  if [ $# -gt 0 ]; then
+    echo "Error: extra arguments after install dir: $*" >&2
+    exit 1
+  fi
+fi
+
 if [ -z "$INSTALL_DIR" ]; then
-  echo "Usage: $0 [OPTIONS] /path/to/install/directory"
-  echo ""
-  echo "Options:"
-  echo "  -v, --verbose      Show detailed output"
-  echo "  -V, --version      Show version information"
-  echo "  -n, --dry-run      Show what would be done without executing"
-  echo "  -k, --keep-cache   Keep downloaded files in cache"
-  echo "  -s, --skip-verify  Skip checksum verification (not recommended)"
-  echo "  --skip-appearance  Skip appearance configuration"
+  usage
   exit 1
 fi
 
 INSTALL_DIR="$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd)"
 WINE_DIR="$INSTALL_DIR/wine-9.0"
 WINEPREFIX="$INSTALL_DIR/Adobe-Photoshop"
+
+if [ "$DRY_RUN" = "true" ]; then
+  cat <<EOF
+[dry-run] Would install Photoshop 2021 + Camera Raw with these settings:
+  INSTALL_DIR     = $INSTALL_DIR
+  WINE_DIR        = $WINE_DIR
+  WINEPREFIX      = $WINEPREFIX
+  WINE_URL        = $WINE_URL
+  CAMERA_RAW_URL  = $CAMERA_RAW_URL
+  CACHE_DIR       = $CACHE_DIR
+  SKIP_VERIFY     = $SKIP_VERIFY
+  SKIP_APPEARANCE = $SKIP_APPEARANCE
+  FORCE           = $FORCE
+  KEEP_CACHE      = $KEEP_CACHE
+EOF
+  exit 0
+fi
+
+# Refuse to clobber an existing Wine prefix without --force
+if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
+  log_error "Wine prefix already exists: $WINEPREFIX"
+  log_info "Re-run with --force to overwrite, or pick a different install directory."
+  exit 1
+fi
 
 # Progress tracking
 TOTAL_STEPS=14
@@ -107,6 +142,11 @@ print_header "      Adobe Photoshop 2021 + Camera Raw Installer for Linux"
 
 # Check system requirements
 check_requirements "$INSTALL_DIR"
+
+# xdotool is only needed for the appearance step; gate the check on it
+if [ "$SKIP_APPEARANCE" != "true" ]; then
+  check_xdotool
+fi
 
 # Setup Wine 9.0 locally
 log_step "Setting up Wine 9.0..."
@@ -147,12 +187,18 @@ log_success "Wine $WINE_VERSION verified"
 # Download winetricks
 log_step "Setting up winetricks..."
 cd "$INSTALL_DIR"
-if [ ! -f "winetricks" ]; then
+# Re-fetch if local copy is missing, empty, or not executable
+if [ ! -s "winetricks" ] || ! [ -x "winetricks" ]; then
+  rm -f winetricks
   if ! download_file "$WINETRICKS_URL" "winetricks" "$WINETRICKS_SHA256" "winetricks" "$SKIP_VERIFY"; then
     log_error "Failed to download winetricks"
     exit 1
   fi
   chmod +x winetricks
+  if [ ! -s "winetricks" ]; then
+    log_error "Downloaded winetricks is empty"
+    exit 1
+  fi
   log_success "Winetricks downloaded"
 else
   log_info "Using existing winetricks"
@@ -170,7 +216,10 @@ wineserver -k 2>/dev/null || true
 sleep 2
 
 if [ "$VERBOSE" = true ]; then
-  wineboot
+  if ! wineboot; then
+    log_error "wineboot failed"
+    exit 1
+  fi
 else
   wineboot >/dev/null 2>&1 &
   BOOT_PID=$!
@@ -181,6 +230,11 @@ else
       sleep 0.1
     done
   done
+  if ! wait "$BOOT_PID"; then
+    printf "\r    %s✗%s Initialization failed\n" "${RED}" "${NC}"
+    log_error "wineboot exited with non-zero status"
+    exit 1
+  fi
   printf "\r    %s✓%s Initialized      \n" "${GREEN}" "${NC}"
 fi
 
@@ -195,8 +249,9 @@ else
 fi
 
 log_step "Applying Photoshop compatibility fixes..."
+PS_FIXES_REG="$(mktemp --suffix=.reg)"
 # Create registry fixes for monitor/EDID issues and DXVK optimization
-cat > /tmp/photoshop_fixes.reg << 'EOF'
+cat > "$PS_FIXES_REG" << 'EOF'
 REGEDIT4
 
 [HKEY_CURRENT_USER\System\CurrentControlSet\Control\GraphicsDrivers]
@@ -219,14 +274,13 @@ REGEDIT4
 EOF
 
 # Apply the registry fixes
-if wine regedit /S /tmp/photoshop_fixes.reg >/dev/null 2>&1; then
+if wine regedit /S "$PS_FIXES_REG" >/dev/null 2>&1; then
   log_success "Photoshop compatibility fixes applied"
 else
   log_warning "Failed to apply Photoshop registry fixes"
 fi
 
-# Clean up
-rm -f /tmp/photoshop_fixes.reg
+rm -f "$PS_FIXES_REG"
 
 log_step "Downloading redistributables..."
 cd "$INSTALL_DIR"
@@ -345,24 +399,25 @@ if [ "$SKIP_CAMERA_RAW" != "true" ]; then
 fi
 
 log_step "Creating launcher..."
-LAUNCHER="$INSTALL_DIR/launch-photoshop.sh"
-cat > "$LAUNCHER" << EOF
-#!/usr/bin/env bash
-export PATH="$WINE_DIR/bin:\$PATH"
-export LD_LIBRARY_PATH="$WINE_DIR/lib:$WINE_DIR/lib64:\${LD_LIBRARY_PATH}"
-export WINEPREFIX="$WINEPREFIX"
-export WINELOADER="$WINE_DIR/bin/wine"
-export WINEDLLPATH="$WINE_DIR/lib/wine:$WINE_DIR/lib64/wine"
-export WINEDEBUG=-all
-export WINEDLLOVERRIDES="winemenubuilder.exe=d;dxgi,d3d10core,d3d11,d3d12="
+WINE_ENV_FILE="$INSTALL_DIR/wine-env.sh"
+write_wine_env_file "$WINE_ENV_FILE" "$WINE_DIR" "$WINEPREFIX"
 
-# Disable DXVK for better Photoshop compatibility
+LAUNCHER="$INSTALL_DIR/launch-photoshop.sh"
+cat > "$LAUNCHER" << 'EOF'
+#!/usr/bin/env bash
+# Single source of truth for wine env lives in wine-env.sh
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+# shellcheck disable=SC1091
+source "$HERE/wine-env.sh"
+
+# Runtime overrides specific to Photoshop (disable DXVK for compatibility)
+export WINEDLLOVERRIDES="winemenubuilder.exe=d;dxgi,d3d10core,d3d11,d3d12="
 export __GL_SHADER_DISK_CACHE=1
-export __GL_SHADER_DISK_CACHE_PATH="\$WINEPREFIX"
+export __GL_SHADER_DISK_CACHE_PATH="$WINEPREFIX"
 export WINEARCH=win64
 
-cd "\$WINEPREFIX/drive_c/Program Files/Adobe/Adobe Photoshop 2021"
-"$WINE_DIR/bin/wine" Photoshop.exe "\$@"
+cd "$WINEPREFIX/drive_c/Program Files/Adobe/Adobe Photoshop 2021"
+exec "$WINELOADER" Photoshop.exe "$@"
 EOF
 
 chmod +x "$LAUNCHER"
@@ -370,17 +425,16 @@ log_success "Launcher created"
 
 # Copy icons to installation directory
 log_step "Copying icons..."
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-if [ -d "$PROJECT_ROOT/images/icons" ]; then
+if [ -d "$WORK_DIR/images/icons" ]; then
   mkdir -p "$INSTALL_DIR/icons"
-  cp -r "$PROJECT_ROOT/images/icons" "$INSTALL_DIR/"
+  cp -r "$WORK_DIR/images/icons" "$INSTALL_DIR/"
   log_success "Icons copied to installation directory"
 else
-  log_warning "Icons folder not found, desktop entry may use generic icons"
+  log_warning "Icons folder not found at $WORK_DIR/images/icons, desktop entry may use generic icons"
 fi
 
 log_step "Creating desktop entry..."
-if ./create-desktop-entry.sh "$INSTALL_DIR" >/dev/null 2>&1; then
+if "$SCRIPT_DIR/create-desktop-entry.sh" "$INSTALL_DIR" >/dev/null 2>&1; then
   log_success "Desktop entry created"
 else
   log_warning "Failed to create desktop entry"
@@ -402,6 +456,11 @@ fi
 # Final cleanup
 wineserver -k 2>/dev/null || true
 sleep 2
+
+if [ "$KEEP_CACHE" != "true" ] && [ -d "$CACHE_DIR" ]; then
+  log_info "Removing download cache at $CACHE_DIR (use --keep-cache to retain)"
+  rm -rf "$CACHE_DIR"
+fi
 
 echo ""
 echo -e "${BOLD}${GREEN}Installation completed successfully!${NC}"
