@@ -121,7 +121,7 @@ if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
 fi
 
 # Progress tracking
-TOTAL_STEPS=13
+TOTAL_STEPS=16
 CURRENT_STEP=0
 
 # Cleanup on exit
@@ -406,7 +406,9 @@ fi
 
 # Create desktop entry
 log_step "Creating desktop entry..."
-if "$SCRIPT_DIR/create-desktop-entry.sh" "$INSTALL_DIR" >/dev/null 2>&1; then
+# Use --force so we overwrite any stale entry from a prior install pointing
+# at an old launcher path.
+if "$SCRIPT_DIR/create-desktop-entry.sh" --force "$INSTALL_DIR" >/dev/null 2>&1; then
   log_success "Desktop entry created"
 else
   log_warning "Failed to create desktop entry"

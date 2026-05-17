@@ -7,7 +7,7 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 
 ## 🎨 Supported Applications
 
-- **Photoshop CC 2021** - Full compatibility with Camera Raw 14.3 (CR version)
+- **Photoshop CC 2021** - Full compatibility with Camera Raw 12.2.1 (CR version)
 - **Illustrator CC 17** - Legacy Illustrator with full feature support
 - **Illustrator 2021** - Latest Illustrator with modern features and custom Wine optimization
 
@@ -25,7 +25,7 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 - **Unified TUI manager** for easy script management
 
 ### Photoshop Specific
-- **Camera Raw 14.3** included and pre-installed (CR version)
+- **Camera Raw 12.2.1** included and pre-installed (CR version)
 - **Automatic appearance configuration** with font antialiasing
 - **Wine 9.0** for optimal compatibility
 
@@ -50,7 +50,6 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
   - dialog or whiptail (for TUI manager)
 - **Optional utilities:**
   - gdown (for Google Drive downloads)
-  - 7z (for Camera Raw installation)
   - xdotool (only needed when running the Photoshop installer without `--skip-appearance`)
 - **Write permissions** to the installation directory
 - **Active internet connection** (downloads ~2-3GB per application)
@@ -208,7 +207,7 @@ All installers follow a similar process:
 5. **Dark Theme Application** - Applies dark theme to Windows UI
 6. **Redistributables Download** - Downloads VC++ runtimes
 7. **Application Extraction** - Extracts application from archive
-8. **Wine Components Installation** - Installs fonts, libraries, DXVK, VKD3D
+8. **Wine Components Installation** - Installs fonts (corefonts, fontsmooth=rgb) and libraries (gdiplus, msxml3, msxml6, atmlib). For Photoshop and Illustrator CC 17 also installs DXVK and VKD3D; Illustrator 2021 omits these
 9. **Application Installation** - Moves application to Wine prefix
 10. **Plugin compatibility** (Illustrator) - Disables `DxfDwg*.aip` plugins whose Windows dependencies don't resolve under Wine; otherwise Illustrator pops an "Error loading plugins" dialog at every launch
 11. **VC++ Redistributables Installation** - Installs Visual C++ runtimes

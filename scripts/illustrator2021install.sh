@@ -130,7 +130,7 @@ if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
 fi
 
 # Progress tracking
-TOTAL_STEPS=18
+TOTAL_STEPS=21
 CURRENT_STEP=0
 
 log_step() {
@@ -703,8 +703,10 @@ fi
 # Step 13: Create desktop entry (if requested)
 if [ "$CREATE_DESKTOP" = true ]; then
   log_step "Creating desktop entry..."
-  # Use the desktop entry creation script which now handles icons properly
-  if "$SCRIPT_DIR/create-illustrator2021-desktop.sh" "$INSTALL_DIR" >/dev/null 2>&1; then
+  # Use --force so we overwrite any stale entry from a prior install pointing
+  # at an old launcher path. The fallback below only runs if the script
+  # itself is somehow missing or broken.
+  if "$SCRIPT_DIR/create-illustrator2021-desktop.sh" --force "$INSTALL_DIR" >/dev/null 2>&1; then
     log_success "Desktop entry created"
   else
     log_warning "Failed to create desktop entry, creating fallback..."

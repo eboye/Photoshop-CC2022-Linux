@@ -4,7 +4,7 @@ This directory contains Flatpak packaging configurations for Adobe Photoshop 202
 
 ## 📦 Available Packages
 
-- **com.adobe.photoshop2021** - Adobe Photoshop 2021 with Camera Raw 14.3
+- **com.adobe.photoshop2021** - Adobe Photoshop 2021 with Camera Raw 12.2.1
 - **com.adobe.illustrator2021** - Adobe Illustrator 2021 with custom Wine optimization
 
 ## 🚀 Quick Start
