@@ -410,8 +410,10 @@ HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 # shellcheck disable=SC1091
 source "$HERE/wine-env.sh"
 
-# Runtime overrides specific to Photoshop (disable DXVK for compatibility)
-export WINEDLLOVERRIDES="winemenubuilder.exe=d;dxgi,d3d10core,d3d11,d3d12="
+# Force Wine's builtin DirectX DLLs (instead of DXVK) for Photoshop compatibility.
+# Note: trailing "=b" means "use builtin only". A bare "=" would disable the DLLs
+# entirely and Photoshop would fail to load with status c0000135.
+export WINEDLLOVERRIDES="winemenubuilder.exe=d;dxgi,d3d10core,d3d11,d3d12=b"
 export __GL_SHADER_DISK_CACHE=1
 export __GL_SHADER_DISK_CACHE_PATH="$WINEPREFIX"
 export WINEARCH=win64
