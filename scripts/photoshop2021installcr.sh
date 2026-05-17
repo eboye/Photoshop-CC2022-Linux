@@ -123,7 +123,10 @@ if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
 fi
 
 # Progress tracking
-TOTAL_STEPS=19
+# Counts every log_step call: the local ones plus 1 emitted by
+# check_requirements in lib/common.sh. The Camera Raw install and
+# appearance steps are conditional; we size for the default case.
+TOTAL_STEPS=20
 CURRENT_STEP=0
 
 # Cleanup on exit

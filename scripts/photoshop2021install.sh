@@ -121,7 +121,11 @@ if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
 fi
 
 # Progress tracking
-TOTAL_STEPS=16
+# Counts every log_step call: the local ones plus 1 emitted by
+# check_requirements in lib/common.sh. The "Configuring appearance" step
+# is conditional, so the counter ends at 16 with --skip-appearance and at
+# 17 in the default case; we size for the default case.
+TOTAL_STEPS=17
 CURRENT_STEP=0
 
 # Cleanup on exit

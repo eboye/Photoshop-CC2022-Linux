@@ -130,7 +130,9 @@ if [ -d "$WINEPREFIX" ] && [ "$FORCE" != "true" ]; then
 fi
 
 # Progress tracking
-TOTAL_STEPS=21
+# Counts every log_step call: the local ones plus 1 emitted by
+# check_requirements in lib/common.sh.
+TOTAL_STEPS=22
 CURRENT_STEP=0
 
 log_step() {
