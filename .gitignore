@@ -28,6 +28,7 @@ wine-9.0/
 wine-tmp/
 allredist/
 winetricks
+/filelist.txt
 
 # Build temp directory - exclude from IDE
 .build-temp/
