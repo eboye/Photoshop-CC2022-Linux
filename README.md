@@ -51,7 +51,7 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 - **Optional utilities:**
   - gdown (for Google Drive downloads)
   - 7z (for Camera Raw installation)
-  - xdotool (for appearance configuration)
+  - xdotool (only needed when running the Photoshop installer without `--skip-appearance`)
 - **Write permissions** to the installation directory
 - **Active internet connection** (downloads ~2-3GB per application)
 
@@ -166,12 +166,19 @@ cd LinuxPS
 **Common Options:**
 - `-v, --verbose` - Show detailed output during installation
 - `-V, --version` - Show installer version information
-- `-n, --dry-run` - Show what would be done without executing
-- `-k, --keep-cache` - Keep downloaded files in cache directory
+- `-n, --dry-run` - Print the resolved settings and exit without writing anything
+- `-k, --keep-cache` - Keep downloaded files in `$CACHE_DIR` after install (default: deleted)
 - `-s, --skip-verify` - Skip checksum verification (not recommended)
+- `-f, --force` - Overwrite an existing Wine prefix without prompting
+- `-h, --help` - Show usage and exit
+
+By default, the installer refuses to run if the target Wine prefix already
+exists (e.g. `$INSTALL_DIR/Adobe-Photoshop` for Photoshop). This prevents
+accidentally wiping a working install when re-running the script. Pass
+`--force` to overwrite, or pick a different install directory.
 
 **Photoshop Specific:**
-- `--skip-appearance` - Skip automatic appearance configuration
+- `--skip-appearance` - Skip automatic appearance configuration (also skips the `xdotool` requirement)
 
 **Illustrator 2021 Specific:**
 - `--no-desktop` - Skip desktop entry creation
@@ -195,17 +202,19 @@ Provides interactive menu with checkboxes for:
 All installers follow a similar process:
 
 1. **System Requirements Check** - Verifies disk space, RAM, and required commands
-2. **Wine 9.0 Setup** - Downloads and extracts isolated Wine 9.0
-3. **Winetricks Configuration** - Downloads and sets up winetricks
-4. **Wine Prefix Initialization** - Creates Windows 10 environment
+2. **Wine Setup** - Downloads and extracts an isolated Wine build (Wine 9.0 for Photoshop and Illustrator CC 17; Wine 7.12 TKG plus the custom wine-illustrator-custom for Illustrator 2021)
+3. **Winetricks Configuration** - Downloads and sets up winetricks (re-fetched if the local copy is empty or non-executable)
+4. **Wine Prefix Initialization** - Creates Windows 10 environment; aborts if `wineboot` exits non-zero
 5. **Dark Theme Application** - Applies dark theme to Windows UI
 6. **Redistributables Download** - Downloads VC++ runtimes
 7. **Application Extraction** - Extracts application from archive
 8. **Wine Components Installation** - Installs fonts, libraries, DXVK, VKD3D
 9. **Application Installation** - Moves application to Wine prefix
-10. **VC++ Redistributables Installation** - Installs Visual C++ runtimes
-11. **Launcher Creation** - Creates launch script
-12. **Desktop Entry Creation** - Creates desktop integration (all apps)
+10. **Plugin compatibility** (Illustrator) - Disables `DxfDwg*.aip` plugins whose Windows dependencies don't resolve under Wine; otherwise Illustrator pops an "Error loading plugins" dialog at every launch
+11. **VC++ Redistributables Installation** - Installs Visual C++ runtimes
+12. **Launcher Creation** - Writes `wine-env.sh` (single source of truth for the Wine env) and `launch-<app>.sh` that sources it
+13. **Desktop Entry Creation** - Creates desktop integration (all apps)
+14. **Cache Cleanup** - Removes `$CACHE_DIR` unless `--keep-cache` was passed
 
 ## 🎮 Usage
 
@@ -229,11 +238,13 @@ After installation, you can launch applications in multiple ways:
 - **Icons** - Custom icons for each application
 
 ### Direct Wine Execution
+
+The launcher sources a generated `wine-env.sh` next to it, so the cleanest way
+to run Wine commands in the same environment is to source that file:
+
 ```bash
-cd /path/to/install/directory
-export PATH="$PWD/wine-9.0/bin:$PATH"
-export WINEPREFIX="$PWD/Adobe-[App]"
-wine "drive_c/Program Files/[App Path]/[Executable]"
+source /path/to/install/directory/wine-env.sh
+wine "$WINEPREFIX/drive_c/Program Files/[App Path]/[Executable]"
 ```
 
 ## 🗂️ Uninstallation
@@ -367,14 +378,14 @@ All installers automatically create desktop entries with:
 ├── Adobe-[App]/              # Wine prefix and application files
 │   ├── drive_c/
 │   │   └── Program Files/[App Path]/
-│   └── users/                  # User settings and registry
-├── wine-9.0/                 # Isolated Wine 9.0 installation
-│   ├── bin/
-│   ├── lib/
-│   └── lib64/
-├── winetricks               # Winetricks script
-├── allredist/               # VC++ redistributables
-└── launch-[app].sh          # Launch script
+│   └── users/                # User settings and registry
+├── wine-9.0/                 # Isolated Wine 9.0 (Photoshop, Illustrator CC 17)
+├── wine-7.12-staging-tkg/    # Wine 7.12 TKG (Illustrator 2021 only)
+├── wine-illustrator-custom/  # Custom Wine for Illustrator 2021 launcher
+├── winetricks                # Winetricks script
+├── allredist/                # VC++ redistributables
+├── wine-env.sh               # Generated Wine env (sourced by the launcher)
+└── launch-[app].sh           # Launcher (sources wine-env.sh + app overrides)
 ```
 
 ## 🗄️ Cache Directory
@@ -413,6 +424,17 @@ Use `--keep-cache` to preserve cache, or delete to save space.
    - Ensure xdotool is installed
    - Check if display is available (not headless mode)
    - Use `--skip-appearance` to skip this step
+
+6. **"Wine prefix already exists"**
+   - Re-running the installer against a directory that already contains a Wine prefix is refused by default to avoid wiping a working install.
+   - Pass `--force` to overwrite, or pick a different install directory.
+
+7. **"Error loading plugins. DxfDwgFileFormat.aip" in Illustrator**
+   - This was a long-standing Wine quirk; the DXF/DWG plugin depends on Windows libraries that don't resolve. New installs disable the three `DxfDwg*.aip` files automatically (renaming them to `.aip.disabled`). DXF/DWG import isn't supported under Wine anyway.
+   - If you already installed Illustrator before this fix, run:
+     ```bash
+     find "$WINEPREFIX/drive_c" -iname "DxfDwg*.aip" -type f -exec mv {} {}.disabled \;
+     ```
 
 ### Performance Optimization
 
