@@ -383,6 +383,21 @@ else
   exit 1
 fi
 
+# Disable DxfDwg plugins: their Windows-side deps don't resolve under Wine,
+# so they pop an "Error loading plugins" dialog on every startup. DXF/DWG
+# import wouldn't work under Wine anyway.
+log_step "Disabling Wine-incompatible DxfDwg plugins..."
+DXF_COUNT=0
+while IFS= read -r -d '' f; do
+  mv "$f" "$f.disabled"
+  DXF_COUNT=$((DXF_COUNT + 1))
+done < <(find "$WINEPREFIX/drive_c" -iname "DxfDwg*.aip" -type f -print0 2>/dev/null)
+if [ "$DXF_COUNT" -gt 0 ]; then
+  log_success "Disabled $DXF_COUNT DxfDwg plugin file(s)"
+else
+  log_info "No DxfDwg plugins found"
+fi
+
 log_step "Creating launcher..."
 WINE_ENV_FILE="$INSTALL_DIR/wine-env.sh"
 write_wine_env_file "$WINE_ENV_FILE" "$WINE_DIR" "$WINEPREFIX"
