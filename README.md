@@ -1,6 +1,6 @@
 # Adobe Creative Suite for Linux
 
-A complete suite of installers for Adobe Creative Cloud applications on Linux using custom Wine builds. This project provides installers for Photoshop CC 2021, Illustrator CC 17, and Illustrator 2021 with automatic desktop integration, backup/restore functionality, and unified management through a TUI interface.
+A complete suite of installers for Adobe Creative Cloud applications on Linux using custom Wine builds. This project provides installers for Photoshop CC 2021, Illustrator CC 17, Illustrator 2021, and After Effects 2022 with automatic desktop integration, backup/restore functionality, and unified management through a TUI interface.
 
 **DISCLAIMER:**
 **Please use this software only if you have active Adobe subscriptions. I'm not responsible for any use without subscription.**
@@ -10,6 +10,7 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 - **Photoshop CC 2021** - Full compatibility with Camera Raw 12.2.1 (CR version)
 - **Illustrator CC 17** - Legacy Illustrator with full feature support
 - **Illustrator 2021** - Latest Illustrator with modern features and custom Wine optimization
+- **After Effects 2022** - Complete motion graphics & VFX support with Direct3D/OpenGL swapchains and MSXML/API fixes
 
 ## ✨ Features
 
@@ -23,13 +24,20 @@ A complete suite of installers for Adobe Creative Cloud applications on Linux us
 - **Caching support** to avoid re-downloading components
 - **Backup and restore** functionality
 - **Unified TUI manager** for easy script management
+- **Flatpak packaging support** for sandbox deployment
 
 ### Photoshop Specific
 - **Camera Raw 12.2.1** included and pre-installed (CR version)
 - **Automatic appearance configuration** with font antialiasing
 - **Wine 9.0** for optimal compatibility
 
-### Illustrator 2021 Specific (NEW!)
+### After Effects 2022 Specific (NEW!)
+- **Wine Direct3D/OpenGL swapchain optimization** for smooth rendering
+- **MSXML & Windows API fixes** for reliable startup
+- **Direct desktop and MIME type integration**
+- **Integrated into TUI Manager and Flatpak builder**
+
+### Illustrator 2021 Specific
 - **Custom wine-illustrator build** for maximum Adobe compatibility
 - **Adobe service bypass** with CSXS registry fixes
 - **Automatic VC++ redistributable installation** via winetricks
@@ -152,6 +160,12 @@ cd LinuxPS
 # Requires AdobeIllustrator2021.tar.xz in project root or specified location
 # Custom Wine will be auto-downloaded if not found locally
 ./scripts/illustrator2021install.sh /path/to/install/directory
+```
+
+#### After Effects 2022
+```bash
+# Requires AdobeAfterEffects2022.tar.xz in project root
+./scripts/aftereffects2022install.sh /path/to/install/directory
 ```
 
 ## ⚙️ Script Parameters

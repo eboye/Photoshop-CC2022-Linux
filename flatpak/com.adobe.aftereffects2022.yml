@@ -1,0 +1,89 @@
+app-id: com.adobe.aftereffects2022
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+command: launch-aftereffects.sh
+
+finish-args:
+  - --allow=devel
+  - --allow=multiarch
+  - --share=network
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=all
+  - --persist=Adobe-AfterEffects
+  - --env=LD_LIBRARY_PATH=/app/lib:/app/lib/i386-linux-gnu
+  - --env=PATH=/app/bin:/app/wine-9.0/bin:/usr/bin
+  - --env=WINEPREFIX=/var/data/Adobe-AfterEffects
+  - --require-version=1.1.2
+
+add-extensions:
+  org.freedesktop.Platform.Compat.i386:
+    directory: lib/i386-linux-gnu
+    version: "49"
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /man
+  - /share/doc
+  - /share/man
+  - '*.la'
+  - '*.a'
+
+modules:
+  # Custom Wine build
+  - name: wine-custom
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/wine-9.0
+      - cp -a * /app/wine-9.0/
+    sources:
+      - type: archive
+        url: https://github.com/Kron4ek/Wine-Builds/releases/download/9.0/wine-9.0-amd64.tar.xz
+        sha256: cf0c09d4346dc10bc92ab674936292cff47eeb71ca7604b8e6303b7bdb97e2f6
+        dest-filename: wine-9.0.tar.xz
+
+  # Winetricks
+  - name: winetricks
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 winetricks /app/bin/winetricks
+    sources:
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/scripts/winetricks
+        sha256: 7f29a4ec7c559af18e88f1c0d012c2b0873c5228158511c3b5f4c9b127b9a733
+
+  # Adobe After Effects 2022 Application
+  - name: adobe-aftereffects2022
+    buildsystem: simple
+    build-commands:
+      - mkdir -p "/app/Adobe-AfterEffects/drive_c/Program Files/Adobe"
+      - cp -a * "/app/Adobe-AfterEffects/drive_c/Program Files/Adobe/" 2>/dev/null || true
+    sources:
+      - type: archive
+        url: file:///home/eboye/GitHub/LinuxPS/AdobeAfterEffects2022.tar.xz
+        dest-filename: AdobeAfterEffects2022.tar.xz
+
+  # Launcher Script
+  - name: launcher
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 launch-aftereffects.sh /app/bin/launch-aftereffects.sh
+    sources:
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/scripts/launch-aftereffects.sh
+
+  # Desktop Entry & Icon
+  - name: desktop-entry
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 com.adobe.aftereffects2022.desktop /app/share/applications/com.adobe.aftereffects2022.desktop
+      - install -Dm644 aftereffects.png /app/share/icons/hicolor/256x256/apps/com.adobe.aftereffects2022.png
+    sources:
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/flatpak/com.adobe.aftereffects2022.desktop
+      - type: file
+        url: file:///home/eboye/GitHub/LinuxPS/images/icons/aftereffects.png

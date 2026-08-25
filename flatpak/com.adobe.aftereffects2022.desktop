@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Adobe After Effects 2022
+Comment=Create motion graphics and visual effects
+Exec=launch-aftereffects.sh %F
+Icon=com.adobe.aftereffects2022
+Terminal=false
+Type=Application
+Categories=Graphics;Video;AudioVideo;
+MimeType=application/x-aftereffects;
+StartupNotify=true
+StartupWMClass=AfterFX.exe
+Keywords=Adobe;AfterEffects;Video;VFX;MotionGraphics;Animation;

@@ -66,6 +66,9 @@ get_app_path() {
     illustrator2021)
       INSTALL_PATH="$BASE_PATH/Illustrator2021"
       ;;
+    aftereffects2022)
+      INSTALL_PATH="$BASE_PATH/AfterEffects2022"
+      ;;
     *)
       INSTALL_PATH="$BASE_PATH/$app_name"
       ;;
@@ -82,18 +85,20 @@ show_main_menu() {
   local choice
   choice=$($DIALOG_CMD --title "Adobe Creative Suite Manager" \
                     --menu "Select an action:" \
-                    24 60 14 \
+                    26 65 16 \
                     "1" "Install Photoshop (Standard)" \
                     "2" "Install Photoshop (with Camera Raw)" \
                     "3" "Install Illustrator CC 17" \
                     "4" "Install Illustrator 2021" \
-                    "5" "Uninstall Photoshop" \
-                    "6" "Uninstall Illustrator CC 17" \
-                    "7" "Uninstall Illustrator 2021" \
-                    "8" "Build Flatpak Packages" \
-                    "9" "Backup Installation" \
-                    "10" "Restore from Backup" \
-                    "11" "Utilities" \
+                    "5" "Install After Effects 2022" \
+                    "6" "Uninstall Photoshop" \
+                    "7" "Uninstall Illustrator CC 17" \
+                    "8" "Uninstall Illustrator 2021" \
+                    "9" "Uninstall After Effects 2022" \
+                    "10" "Build Flatpak Packages" \
+                    "11" "Backup Installation" \
+                    "12" "Restore from Backup" \
+                    "13" "Utilities" \
                     3>&1 1>&2 2>&3)
   
   case $choice in
@@ -101,13 +106,15 @@ show_main_menu() {
     2) SELECTED_SCRIPT="installcr" ;;
     3) SELECTED_SCRIPT="illustrator" ;;
     4) SELECTED_SCRIPT="illustrator2021" ;;
-    5) SELECTED_SCRIPT="uninstall" ;;
-    6) SELECTED_SCRIPT="uninstall-illustrator" ;;
-    7) SELECTED_SCRIPT="uninstall-illustrator2021" ;;
-    8) show_flatpak_menu ;;
-    9) SELECTED_SCRIPT="backup" ;;
-    10) SELECTED_SCRIPT="restore" ;;
-    11) show_utilities_menu ;;
+    5) SELECTED_SCRIPT="aftereffects2022" ;;
+    6) SELECTED_SCRIPT="uninstall" ;;
+    7) SELECTED_SCRIPT="uninstall-illustrator" ;;
+    8) SELECTED_SCRIPT="uninstall-illustrator2021" ;;
+    9) SELECTED_SCRIPT="uninstall-aftereffects2022" ;;
+    10) show_flatpak_menu ;;
+    11) SELECTED_SCRIPT="backup" ;;
+    12) SELECTED_SCRIPT="restore" ;;
+    13) show_utilities_menu ;;
     *) exit 0 ;;
   esac
 }
@@ -826,6 +833,14 @@ execute_script() {
       [ "$CREATE_DESKTOP" = false ] && cmd="$cmd --no-desktop"
       cmd="$cmd \"$INSTALL_PATH\""
       ;;
+    aftereffects2022)
+      title="Installing After Effects 2022..."
+      cmd="./aftereffects2022install.sh"
+      [ "$VERBOSE" = true ] && cmd="$cmd -v"
+      [ "$KEEP_CACHE" = true ] && cmd="$cmd -k"
+      [ "$SKIP_VERIFY" = true ] && cmd="$cmd -s"
+      cmd="$cmd \"$INSTALL_PATH\""
+      ;;
     uninstall)
       title="Uninstalling Photoshop..."
       cmd="./uninstaller.sh"
@@ -843,6 +858,13 @@ execute_script() {
     uninstall-illustrator2021)
       title="Uninstalling Illustrator 2021..."
       cmd="./uninstall-illustrator2021.sh"
+      [ "$VERBOSE" = true ] && cmd="$cmd -v"
+      [ "$PURGE" = true ] && cmd="$cmd --purge"
+      cmd="$cmd \"$INSTALL_PATH\""
+      ;;
+    uninstall-aftereffects2022)
+      title="Uninstalling After Effects 2022..."
+      cmd="./uninstall-aftereffects2022.sh"
       [ "$VERBOSE" = true ] && cmd="$cmd -v"
       [ "$PURGE" = true ] && cmd="$cmd --purge"
       cmd="$cmd \"$INSTALL_PATH\""
@@ -942,6 +964,11 @@ main() {
         input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
         get_app_path "illustrator2021"
         ;;
+      aftereffects2022)
+        show_install_options
+        input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
+        get_app_path "aftereffects2022"
+        ;;
       uninstall)
         show_uninstall_options
         input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
@@ -957,33 +984,41 @@ main() {
         input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
         get_app_path "illustrator2021"
         ;;
+      uninstall-aftereffects2022)
+        show_uninstall_options
+        input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
+        get_app_path "aftereffects2022"
+        ;;
       backup)
         show_backup_options
         input_path "Select Base Directory for Adobe Apps" "$BASE_PATH" true
         # Auto-detect which app to backup based on existing installations
-        if [ -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/Illustrator2021" ]; then
+        if [ -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/Illustrator2021" ] && [ ! -d "$BASE_PATH/AfterEffects2022" ]; then
           get_app_path "photoshop"
-        elif [ -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/Illustrator2021" ]; then
+        elif [ -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/Illustrator2021" ] && [ ! -d "$BASE_PATH/AfterEffects2022" ]; then
           get_app_path "illustrator"
-        elif [ -d "$BASE_PATH/Illustrator2021" ] && [ ! -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/IllustratorCC17" ]; then
+        elif [ -d "$BASE_PATH/Illustrator2021" ] && [ ! -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/AfterEffects2022" ]; then
           get_app_path "illustrator2021"
+        elif [ -d "$BASE_PATH/AfterEffects2022" ] && [ ! -d "$BASE_PATH/Photoshop2021" ] && [ ! -d "$BASE_PATH/IllustratorCC17" ] && [ ! -d "$BASE_PATH/Illustrator2021" ]; then
+          get_app_path "aftereffects2022"
         else
-          # Both exist or neither exist, ask user
+          # Ask user
           local temp_file=$(mktemp)
           $DIALOG_CMD --title "Select Application to Backup" \
                       --menu "Choose application:" \
-                      12 50 3 \
+                      14 50 4 \
                       "1" "Photoshop 2021" \
                       "2" "Illustrator CC 17" \
                       "3" "Illustrator 2021" \
-                      3>&1 1>&2 2>&3 > "$temp_file"
-          
+                      "4" "After Effects 2022" \
+                      2> "$temp_file"
           if [ $? -eq 0 ]; then
-            local choice=$(cat "$temp_file")
-            case $choice in
+            local app_choice=$(cat "$temp_file")
+            case $app_choice in
               1) get_app_path "photoshop" ;;
               2) get_app_path "illustrator" ;;
               3) get_app_path "illustrator2021" ;;
+              4) get_app_path "aftereffects2022" ;;
             esac
           fi
           rm -f "$temp_file"

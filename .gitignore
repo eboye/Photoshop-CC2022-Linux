@@ -1,6 +1,7 @@
 /AdobePhotoshop2021.tar.xz
 /illustratorCC17.tgz
 /AdobeIllustrator2021.tar.xz
+/AdobeAfterEffects2022.tar.xz
 /wine-illustrator-custom.tar.xz
 .idea
 
@@ -12,15 +13,23 @@
 photoshop-2021-backup-*.tar.xz
 photoshop-2021-backup-*.tar
 photoshop-backup-metadata.txt
+illustrator-*-backup-*.tar.xz
+aftereffects-*-backup-*.tar.xz
+aftereffects-*-backup-*.tar
 
 # Installation directories
 Photoshop*/
 Adobe-Photoshop*/
+Illustrator*/
+Adobe-Illustrator*/
+AfterEffects*/
+Adobe-AfterEffects*/
 wine-9.0/
 
 # Cache files
 .cache/photoshop2021-installer/
 .cache/photoshop2021cr-installer/
+.cache/aftereffects2022-installer/
 
 # Temporary files
 *.bak
@@ -29,6 +38,7 @@ wine-tmp/
 allredist/
 winetricks
 /filelist.txt
+ae-work/
 
 # Build temp directory - exclude from IDE
 .build-temp/

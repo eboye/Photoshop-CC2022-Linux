@@ -198,7 +198,7 @@ show_usage() {
     echo "Usage: $0 [command] [app] [options]"
     echo ""
     echo "Commands:"
-    echo "  build [app] [test]     Build the specified Flatpak (photoshop2021, illustrator2021)"
+    echo "  build [app] [test]     Build the specified Flatpak (photoshop2021, illustrator2021, aftereffects2022)"
     echo "                          Add 'test' to skip bundle export"
     echo "  export [app]    Export the specified Flatpak as a bundle"
     echo "  clean           Clean all build artifacts"
@@ -206,7 +206,8 @@ show_usage() {
     echo "Examples:"
     echo "  $0 build photoshop2021"
     echo "  $0 build illustrator2021 test"
-    echo "  $0 export photoshop2021"
+    echo "  $0 build aftereffects2022"
+    echo "  $0 export aftereffects2022"
     echo "  $0 clean"
 }
 
@@ -226,7 +227,7 @@ clean_build() {
 case "${1:-}" in
     "build")
         case "${2:-}" in
-            "photoshop2021"|"illustrator2021")
+            "photoshop2021"|"illustrator2021"|"aftereffects2022")
                 check_dependencies
                 if [ "${3:-}" = "test" ]; then
                     build_flatpak "$2" true
@@ -243,7 +244,7 @@ case "${1:-}" in
         ;;
     "export")
         case "${2:-}" in
-            "photoshop2021"|"illustrator2021")
+            "photoshop2021"|"illustrator2021"|"aftereffects2022")
                 export_bundle "$2"
                 ;;
             *)
