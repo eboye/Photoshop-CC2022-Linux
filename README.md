@@ -97,7 +97,7 @@ The easiest way to manage all Adobe applications is using the unified TUI manage
 ```
 
 This provides a user-friendly menu to:
-- Install any Adobe application (Photoshop, Illustrator CC 17, Illustrator 2021)
+- Install any Adobe application (Photoshop, Illustrator CC 17, Illustrator 2021, After Effects 2022)
 - **Build Flatpak packages** for easy distribution and installation
 - Uninstall applications
 - Create backups and restore installations
@@ -129,6 +129,12 @@ curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/illustrat
 
 # Illustrator 2021 (requires local AdobeIllustrator2021.tar.xz)
 curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/illustrator2021install.sh | bash -s -- /path/to/install/directory
+```
+
+#### After Effects Installer
+```bash
+# After Effects 2022 (requires local AdobeAfterEffects2022.tar.xz)
+curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/aftereffects2022install.sh | bash -s -- /path/to/install/directory
 ```
 
 ## 📦 Standard Installation
@@ -215,13 +221,13 @@ Provides interactive menu with checkboxes for:
 All installers follow a similar process:
 
 1. **System Requirements Check** - Verifies disk space, RAM, and required commands
-2. **Wine Setup** - Downloads and extracts an isolated Wine build (Wine 9.0 for Photoshop and Illustrator CC 17; Wine 7.12 TKG plus the custom wine-illustrator-custom for Illustrator 2021)
+2. **Wine Setup** - Downloads and extracts an isolated Wine build (Wine 9.0 for Photoshop, Illustrator CC 17, and After Effects 2022; Wine 7.12 TKG plus the custom wine-illustrator-custom for Illustrator 2021)
 3. **Winetricks Configuration** - Downloads and sets up winetricks (re-fetched if the local copy is empty or non-executable)
 4. **Wine Prefix Initialization** - Creates Windows 10 environment; aborts if `wineboot` exits non-zero
 5. **Dark Theme Application** - Applies dark theme to Windows UI
 6. **Redistributables Download** - Downloads VC++ runtimes
 7. **Application Extraction** - Extracts application from archive
-8. **Wine Components Installation** - Installs fonts (corefonts, fontsmooth=rgb) and libraries (gdiplus, msxml3, msxml6, atmlib). For Photoshop and Illustrator CC 17 also installs DXVK and VKD3D; Illustrator 2021 omits these
+8. **Wine Components Installation** - Installs fonts (corefonts, fontsmooth=rgb) and libraries (gdiplus, msxml3, msxml6, atmlib). For Photoshop, Illustrator CC 17, and After Effects 2022 also installs DXVK and VKD3D; Illustrator 2021 omits these
 9. **Application Installation** - Moves application to Wine prefix
 10. **Plugin compatibility** (Illustrator) - Disables `DxfDwg*.aip` plugins whose Windows dependencies don't resolve under Wine; otherwise Illustrator pops an "Error loading plugins" dialog at every launch
 11. **VC++ Redistributables Installation** - Installs Visual C++ runtimes
@@ -243,6 +249,9 @@ After installation, you can launch applications in multiple ways:
 
 # Illustrator 2021
 /path/to/install/directory/launch-illustrator.sh
+
+# After Effects 2022
+/path/to/install/directory/launch-aftereffects.sh
 ```
 
 ### Desktop Integration
@@ -273,6 +282,9 @@ To completely remove any Adobe application:
 
 # Illustrator 2021
 ./scripts/uninstall-illustrator2021.sh /path/to/install/directory
+
+# After Effects 2022
+./scripts/uninstall-aftereffects2022.sh /path/to/install/directory
 ```
 
 Use `--purge` to also remove cached downloads:
@@ -282,7 +294,7 @@ Use `--purge` to also remove cached downloads:
 
 ## 📦 Flatpak Packaging
 
-For easy distribution and sandboxed installation, both applications can be packaged as Flatpaks:
+For easy distribution and sandboxed installation, applications can be packaged as Flatpaks:
 
 ### Using the TUI Manager
 ```bash
@@ -292,12 +304,15 @@ For easy distribution and sandboxed installation, both applications can be packa
 
 ### Manual Flatpak Building
 ```bash
-# Build both applications with bundle export
-./flatpak/build-flatpaks.sh all --export
-
 # Build individual applications
-./flatpak/build-flatpaks.sh photoshop2021
-./flatpak/build-flatpaks.sh illustrator2021
+./flatpak/build-flatpaks.sh build photoshop2021
+./flatpak/build-flatpaks.sh build illustrator2021
+./flatpak/build-flatpaks.sh build aftereffects2022
+
+# Export bundles for distribution
+./flatpak/build-flatpaks.sh export photoshop2021
+./flatpak/build-flatpaks.sh export illustrator2021
+./flatpak/build-flatpaks.sh export aftereffects2022
 ```
 
 ### Installing Flatpak Packages
@@ -305,10 +320,12 @@ For easy distribution and sandboxed installation, both applications can be packa
 # Install from local bundle
 flatpak install --user com.adobe.photoshop2021.flatpak
 flatpak install --user com.adobe.illustrator2021.flatpak
+flatpak install --user com.adobe.aftereffects2022.flatpak
 
 # Run installed Flatpaks
 flatpak run com.adobe.photoshop2021
 flatpak run com.adobe.illustrator2021
+flatpak run com.adobe.aftereffects2022
 ```
 
 **Flatpak Benefits:**
@@ -335,6 +352,9 @@ All applications include backup and restore functionality for easy migration bet
 
 # Illustrator 2021
 ./scripts/backup-illustrator2021.sh /path/to/illustrator2021/installation
+
+# After Effects 2022
+./scripts/backup-aftereffects2022.sh /path/to/aftereffects/installation
 ```
 
 **Backup Options:**
@@ -346,6 +366,8 @@ All applications include backup and restore functionality for easy migration bet
 
 ```bash
 ./scripts/restore-[app].sh backup-file.tar.xz /new/installation/path
+# or for After Effects 2022:
+./scripts/restore-aftereffects2022.sh -f backup-file.tar.xz -t /new/installation/path
 ```
 
 The restore script automatically:
@@ -377,6 +399,9 @@ All installers automatically create desktop entries with:
 
 # Illustrator 2021
 ./scripts/create-illustrator2021-desktop.sh /path/to/installation
+
+# After Effects 2022
+./scripts/create-aftereffects2022-desktop.sh /path/to/installation
 ```
 
 **Desktop Entry Options:**
@@ -388,11 +413,11 @@ All installers automatically create desktop entries with:
 
 ```
 /path/to/install/directory/
-├── Adobe-[App]/              # Wine prefix and application files
+├── Adobe-[App]/              # Wine prefix and application files (e.g. Adobe-Photoshop, Adobe-AfterEffects)
 │   ├── drive_c/
 │   │   └── Program Files/[App Path]/
 │   └── users/                # User settings and registry
-├── wine-9.0/                 # Isolated Wine 9.0 (Photoshop, Illustrator CC 17)
+├── wine-9.0/                 # Isolated Wine 9.0 (Photoshop, Illustrator CC 17, After Effects 2022)
 ├── wine-7.12-staging-tkg/    # Wine 7.12 TKG (Illustrator 2021 only)
 ├── wine-illustrator-custom/  # Custom Wine for Illustrator 2021 launcher
 ├── winetricks                # Winetricks script
@@ -408,6 +433,7 @@ Downloaded files are cached in:
 - `~/.cache/photoshop2021-installer` (Photoshop Standard)
 - `~/.cache/illustratorcc17-installer` (Illustrator CC 17)
 - `~/.cache/illustrator2021cr-installer` (Illustrator 2021)
+- `~/.cache/aftereffects2022-installer` (After Effects 2022)
 
 Use `--keep-cache` to preserve cache, or delete to save space.
 
@@ -468,26 +494,39 @@ Use `--keep-cache` to preserve cache, or delete to save space.
 
 ```
 LinuxPS/
+├── flatpak/                          # Flatpak build scripts and manifests
+│   ├── com.adobe.aftereffects2022.yml
+│   ├── com.adobe.illustrator2021.yml
+│   ├── com.adobe.photoshop2021.yml
+│   └── build-flatpaks.sh
 ├── lib/
-│   └── common.sh           # Shared functions for all scripts
+│   └── common.sh                     # Shared functions for all scripts
 ├── scripts/
 │   ├── photoshop-manager.sh           # Unified TUI manager
 │   ├── photoshop2021install.sh       # Photoshop standard installer
 │   ├── photoshop2021installcr.sh     # Photoshop CR installer
 │   ├── illustrator2021installcr.sh    # Illustrator CC 17 installer
 │   ├── illustrator2021install.sh      # Illustrator 2021 installer
+│   ├── aftereffects2022install.sh     # After Effects 2022 installer
+│   ├── launch-photoshop.sh           # Photoshop launcher template
+│   ├── launch-illustrator.sh         # Illustrator launcher template
+│   ├── launch-aftereffects.sh        # After Effects launcher template
 │   ├── uninstaller.sh                # Photoshop uninstaller
 │   ├── uninstall-illustrator.sh      # Illustrator CC 17 uninstaller
 │   ├── uninstall-illustrator2021.sh  # Illustrator 2021 uninstaller
+│   ├── uninstall-aftereffects2022.sh # After Effects 2022 uninstaller
 │   ├── backup-photoshop.sh           # Photoshop backup script
 │   ├── backup-illustrator.sh         # Illustrator CC 17 backup script
 │   ├── backup-illustrator2021.sh    # Illustrator 2021 backup script
+│   ├── backup-aftereffects2022.sh    # After Effects 2022 backup script
 │   ├── restore-photoshop.sh          # Photoshop restore script
 │   ├── restore-illustrator.sh        # Illustrator CC 17 restore script
 │   ├── restore-illustrator2021.sh     # Illustrator 2021 restore script
+│   ├── restore-aftereffects2022.sh   # After Effects 2022 restore script
 │   ├── create-desktop-entry.sh       # Photoshop desktop entry
 │   ├── create-illustratorCC17-desktop.sh # Illustrator CC 17 desktop entry
-│   └── create-illustrator2021-desktop.sh # Illustrator 2021 desktop entry
+│   ├── create-illustrator2021-desktop.sh # Illustrator 2021 desktop entry
+│   └── create-aftereffects2022-desktop.sh # After Effects 2022 desktop entry
 └── README.md
 ```
 

@@ -1,11 +1,12 @@
 # Adobe Creative Suite Flatpak Packages
 
-This directory contains Flatpak packaging configurations for Adobe Photoshop 2021 and Adobe Illustrator 2021, allowing for easy installation and management on Linux systems.
+This directory contains Flatpak packaging configurations for Adobe Photoshop 2021, Adobe Illustrator 2021, and Adobe After Effects 2022, allowing for easy installation and management on Linux systems.
 
 ## 📦 Available Packages
 
 - **com.adobe.photoshop2021** - Adobe Photoshop 2021 with Camera Raw 12.2.1
 - **com.adobe.illustrator2021** - Adobe Illustrator 2021 with custom Wine optimization
+- **com.adobe.aftereffects2022** - Adobe After Effects 2022 with Wine 9.0 and Direct3D/OpenGL optimizations
 
 ## 🚀 Quick Start
 
@@ -21,7 +22,7 @@ sudo pacman -S flatpak flatpak-builder    # Arch
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 # Install required runtimes
-flatpak install --user flathub org.gnome.Platform//45 org.gnome.Sdk//45 org.winehq.Wine//stable -y
+flatpak install --user flathub org.gnome.Platform//49 org.gnome.Sdk//49 -y
 ```
 
 ### Building from Source
@@ -29,23 +30,27 @@ flatpak install --user flathub org.gnome.Platform//45 org.gnome.Sdk//45 org.wine
 1. **Ensure you have the application archives:**
    - `AdobePhotoshop2021.tar.xz` (for Photoshop)
    - `AdobeIllustrator2021.tar.xz` (for Illustrator)
+   - `AdobeAfterEffects2022.tar.xz` (for After Effects)
    - `wine-illustrator-custom.tar.xz` (for Illustrator)
 
 2. **Build individual applications:**
    ```bash
    # Build Photoshop 2021
-   ./build-flatpaks.sh photoshop2021
+   ./build-flatpaks.sh build photoshop2021
 
    # Build Illustrator 2021
-   ./build-flatpaks.sh illustrator2021
+   ./build-flatpaks.sh build illustrator2021
 
-   # Build both applications
-   ./build-flatpaks.sh all
+   # Build After Effects 2022
+   ./build-flatpaks.sh build aftereffects2022
    ```
 
 3. **Build and export bundles for distribution:**
    ```bash
-   ./build-flatpaks.sh all --export
+   # Export bundles to .flatpak files
+   ./build-flatpaks.sh export photoshop2021
+   ./build-flatpaks.sh export illustrator2021
+   ./build-flatpaks.sh export aftereffects2022
    ```
 
 ### Installing Pre-built Bundles
@@ -58,6 +63,9 @@ flatpak install --user com.adobe.photoshop2021.flatpak
 
 # Install Illustrator
 flatpak install --user com.adobe.illustrator2021.flatpak
+
+# Install After Effects
+flatpak install --user com.adobe.aftereffects2022.flatpak
 ```
 
 ## 🎯 Usage
@@ -65,8 +73,8 @@ flatpak install --user com.adobe.illustrator2021.flatpak
 After installation, you can:
 
 ### Launch from Applications Menu
-- Look for "Adobe Photoshop 2021" and "Adobe Illustrator 2021" in your Graphics menu
-- **Icons are now properly displayed** using PNG files from the icons folder
+- Look for "Adobe Photoshop 2021", "Adobe Illustrator 2021", and "Adobe After Effects 2022" in your Applications menu
+- **Icons are properly displayed** using PNG files from the icons folder
 
 ### Launch from Command Line
 ```bash
@@ -75,6 +83,9 @@ flatpak run com.adobe.photoshop2021
 
 # Launch Illustrator
 flatpak run com.adobe.illustrator2021
+
+# Launch After Effects
+flatpak run com.adobe.aftereffects2022
 ```
 
 ## 🖼️ Icon Integration
@@ -95,7 +106,7 @@ Both direct installations and Flatpak packages now properly use PNG icons from t
 
 Each Flatpak package includes:
 
-- **Custom Wine build** - Optimized Wine 9.0 (Photoshop) or Wine-illustrator (Illustrator)
+- **Custom Wine build** - Optimized Wine 9.0 (Photoshop, After Effects) or Wine-illustrator (Illustrator)
 - **Pre-configured Wine prefix** - Windows 10 environment with dark theme
 - **Adobe application** - Complete application installation
 - **VC++ redistributables** - Required Windows components
@@ -105,8 +116,8 @@ Each Flatpak package includes:
 ## 📁 File Locations
 
 Flatpak applications store data in:
-- **Application data:** `~/.var/app/com.adobe.photoshop2021/` or `~/.var/app/com.adobe.illustrator2021/`
-- **Wine prefix:** `/app/Adobe-Photoshop` or `/app/Adobe-Illustrator` (within Flatpak)
+- **Application data:** `~/.var/app/com.adobe.photoshop2021/`, `~/.var/app/com.adobe.illustrator2021/`, or `~/.var/app/com.adobe.aftereffects2022/`
+- **Wine prefix:** `/app/Adobe-Photoshop`, `/app/Adobe-Illustrator`, or `/app/Adobe-AfterEffects` (within Flatpak)
 - **User settings:** Preserved in Flatpak's user directories
 
 ## 🔧 Configuration
@@ -116,6 +127,7 @@ Flatpak applications store data in:
 # Access Wine configuration
 flatpak run --command=winecfg com.adobe.photoshop2021
 flatpak run --command=winecfg com.adobe.illustrator2021
+flatpak run --command=winecfg com.adobe.aftereffects2022
 ```
 
 ### Winetricks
@@ -123,6 +135,7 @@ flatpak run --command=winecfg com.adobe.illustrator2021
 # Run winetricks for additional components
 flatpak run --command=winetricks com.adobe.photoshop2021
 flatpak run --command=winetricks com.adobe.illustrator2021
+flatpak run --command=winetricks com.adobe.aftereffects2022
 ```
 
 ### Appearance Configuration
@@ -147,6 +160,10 @@ The packages automatically set up file associations:
 - `.svg` - Scalable vector graphics
 - `.eps` - Encapsulated PostScript
 
+### After Effects 2022
+- `.aep` - After Effects project files
+- `.aet` - After Effects template files
+
 ## 🔄 Updates
 
 To update installed packages:
@@ -156,8 +173,9 @@ flatpak update --user
 
 To rebuild and update:
 ```bash
-./build-flatpaks.sh photoshop2021 --export
-./build-flatpaks.sh illustrator2021 --export
+./build-flatpaks.sh build photoshop2021
+./build-flatpaks.sh build illustrator2021
+./build-flatpaks.sh build aftereffects2022
 ```
 
 ## 🗑️ Uninstallation
@@ -169,9 +187,13 @@ flatpak uninstall --user com.adobe.photoshop2021
 # Remove Illustrator
 flatpak uninstall --user com.adobe.illustrator2021
 
+# Remove After Effects
+flatpak uninstall --user com.adobe.aftereffects2022
+
 # Remove application data
 rm -rf ~/.var/app/com.adobe.photoshop2021
 rm -rf ~/.var/app/com.adobe.illustrator2021
+rm -rf ~/.var/app/com.adobe.aftereffects2022
 ```
 
 ## 🐛 Troubleshooting
@@ -213,17 +235,17 @@ flatpak run --command=sh com.adobe.photoshop2021
 The build script supports several options:
 
 ```bash
-# Check dependencies only
-./build-flatpaks.sh --check
+# Build specific application (with bundle export)
+./build-flatpaks.sh build aftereffects2022
 
-# Build with bundle export
-./build-flatpaks.sh photoshop2021 --export
+# Build in test mode (skip bundle export)
+./build-flatpaks.sh build aftereffects2022 test
 
-# Export bundles only (requires built packages)
-./build-flatpaks.sh --bundle photoshop2021
+# Export bundles for an application
+./build-flatpaks.sh export aftereffects2022
 
-# Show help
-./build-flatpaks.sh --help
+# Clean build artifacts
+./build-flatpaks.sh clean
 ```
 
 ## 🔄 Migration from Regular Installation
@@ -235,6 +257,7 @@ If you're migrating from the regular LinuxPS installation:
    # From your existing installation
    ./scripts/backup-photoshop.sh /path/to/photoshop
    ./scripts/backup-illustrator2021.sh /path/to/illustrator
+   ./scripts/backup-aftereffects2022.sh /path/to/aftereffects
    ```
 
 2. **Install Flatpak versions**
