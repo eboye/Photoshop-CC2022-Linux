@@ -110,31 +110,31 @@ You can run any script directly from the repository:
 
 #### TUI Manager
 ```bash
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop-manager.sh | bash
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/photoshop-manager.sh | bash
 ```
 
 #### Photoshop Installers
 ```bash
 # With Camera Raw (Recommended)
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021installcr.sh | bash -s -- /path/to/install/directory
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/photoshop2021installcr.sh | bash -s -- /path/to/install/directory
 
 # Standard version
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/photoshop2021install.sh | bash -s -- /path/to/install/directory
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/photoshop2021install.sh | bash -s -- /path/to/install/directory
 ```
 
 #### Illustrator Installers
 ```bash
 # Illustrator CC 17
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/illustrator2021installcr.sh | bash -s -- /path/to/install/directory
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/illustrator2021installcr.sh | bash -s -- /path/to/install/directory
 
 # Illustrator 2021 (requires local AdobeIllustrator2021.tar.xz)
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/illustrator2021install.sh | bash -s -- /path/to/install/directory
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/illustrator2021install.sh | bash -s -- /path/to/install/directory
 ```
 
 #### After Effects Installer
 ```bash
 # After Effects 2022 (requires local AdobeAfterEffects2022.tar.xz)
-curl -sSL https://raw.githubusercontent.com/eboye/LinuxPS/main/scripts/aftereffects2022install.sh | bash -s -- /path/to/install/directory
+curl -sSL https://raw.githubusercontent.com/eboye/Photoshop-CC2022-Linux/main/scripts/aftereffects2022install.sh | bash -s -- /path/to/install/directory
 ```
 
 ## 📦 Standard Installation
